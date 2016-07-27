@@ -7,54 +7,63 @@
 ###########
 
 # General References.
-export     PROJECT=/projects/uoo00032
-export   RESOURCES=${PROJECT}/Resources
-export   PLATFORMS=${RESOURCES}/Capture_Platforms/GRCh37
-export        PBIN=${RESOURCES}/bin
-export      SLSBIN=${PBIN}/slurm-scripts
-export DESCRIPTION=${RESOURCES}/FastQdescriptions.txt
-export      FASTQS=${PROJECT}/fastqfiles
-export      BUNDLE=${RESOURCES}/broad_bundle_b37_v2.5
-export       DBSNP=${BUNDLE}/dbsnp_141.GRCh37.vcf
-export       MILLS=${BUNDLE}/Mills_and_1000G_gold_standard.indels.b37.vcf
-export      INDELS=${BUNDLE}/1000G_phase1.indels.b37.vcf
-export         REF=${BUNDLE}/human_g1k_v37
-export        REFA=${REF}.fasta
-export        REFD=${REF}.dict
+export      PROJECT=/projects/uoo00032
+export    RESOURCES=${PROJECT}/Resources
+export    PLATFORMS=${RESOURCES}/Capture_Platforms/GRCh37
+export         PBIN=${RESOURCES}/bin
+export       SLSBIN=${PBIN}/slurm-scripts
+export DESCRIPTIONS=${RESOURCES}/FastQdescriptions.txt
+export       FASTQS=${PROJECT}/fastqfiles
+export       BUNDLE=${RESOURCES}/broad_bundle_b37_v2.5
+export        DBSNP=${BUNDLE}/dbsnp_141.GRCh37.vcf
+export        MILLS=${BUNDLE}/Mills_and_1000G_gold_standard.indels.b37.vcf
+export       INDELS=${BUNDLE}/1000G_phase1.indels.b37.vcf
+export          REF=${BUNDLE}/human_g1k_v37
+export         REFA=${REF}.fasta
+export         REFD=${REF}.dict
+export JOB_TEMP_DIR=${TMPDIR}	#system defined temp dir. /tmp/jobs/$SLURM_JOB_USER/$SLURM_JOB_ID
 
 export      BWA=${RESOURCES}/bwa-0.7.15/bwa
 export   PICARD=${RESOURCES}/picard-tools-2.5.0/picard.jar
 export SAMTOOLS=${RESOURCES}/samtools-1.3.1/samtools
 export     GATK=${RESOURCES}/GenomeAnalysisTK-nightly-2016-07-22-g8923599/GenomeAnalysisTK.jar
 
-# Modules versions
+####################
+# Modules versions #
+####################
+
 export     MOD_ZLIB="zlib"
 export     MOD_JAVA="Java/1.8.0_5"
 
-# Removed for better version management and nightly bug fixes.
-#export      MOD_BWA="BWA"
-#export MOD_SAMTOOLS="SAMtools"
-#export   MOD_PICARD="picard"
-#export     MOD_GATK="GATK/3.5"
+###########
+# Contigs #
+###########
 
-# Temp folder
-export JOB_TEMP_DIR=${TMPDIR}	#system defined temp dir. /tmp/jobs/$SLURM_JOB_USER/$SLURM_JOB_ID
-
-# Contigs according to the reference sequence.
 export CONTIGS=$(cat ${REFD} | awk -F'[[:space:]:]' 'NR!=1{print $3}')
+export NUMCONTIGS=$(echo "${CONTIGS}" | wc -w)
 
-# GrCh37 Gender regions
+#########################
+# GrCh37 Gender regions #
+#########################
+
 export XPAR1="X:1-2699520"
 export TRUEX="X:2699521-154931043"
 export XPAR2="X:154931044-155260560"
 export TRUEY="Y:2649521-59034050"
 
-# FastQ Split Data management.
-export FASTQ_MAXREAD=10000000
-export FASTQ_MAXSCAN=10000
-export FASTQ_MAXDIFF=2
+###############################
+# FastQ Split Data management #
+###############################
 
-# Java memory calculation
+export FASTQ_MAXREAD=10000000	# How many reads per block.
+export FASTQ_MAXSCAN=10000		# How many lines to check for best index.
+export FASTQ_MAXDIFF=2			# Maximum index variation before new index is created.
+
+###########################
+# Java memory calculation #
+###########################
+
+# Sometimes we call this file outside of a slurm script so fake it til it's made.
 [ -z $SLURM_MEM_PER_CPU ] && SLURM_MEM_PER_CPU=4096
 [ -z $SLURM_JOB_CPUS_PER_NODE ] && SLURM_JOB_CPUS_PER_NODE=4
 
@@ -64,9 +73,10 @@ export MAX_RECORDS=$((${JAVA_MEM_GB} * 200000)) #~100bp picard records in memory
 
 ######################
 # SBATCH definitions #
-export OPENBLAS_MAIN_FREE=1
+######################
 declare -A SB
-# SB[W,*]: sbatch max wall time in minutes. Should be no less than 1.25x highest seen run-time.
+
+# SB[W,*]: sbatch max wall time in minutes. Keep this at least 1.25x highest run-time.
 # SB[C,*]: sbatch cores per task
 # SB[M,*]: sbatch memory per task in megabytes
 
@@ -110,8 +120,6 @@ SB[W,HAPLO]=180
 SB[C,HAPLO]=8
 SB[M,HAPLO]=32768
 
-
-
 # Contig Wall time multipliers. Do we really need 84 of these? up. Move to another file!
 SB[CWM,1]=1
 SB[CWM,2]=1
@@ -120,9 +128,14 @@ SB[CWM,4]=1
 SB[CWM,5]=1
 SB[CWM,6]=1
 
-SB_ARGS="--account ${SB[ACCOUNT]} --mail-user="
+SB_ARGS="--account ${SB[ACCOUNT]} --mail-user=${SB[MAIL,USER]}"
 
-# Helper functions
+export OPENBLAS_MAIN_FREE=1
+
+####################
+# Helper functions #
+####################
+
 function printHMS {
 	SECS=${1}
 	printf "%02d:%02d:%02d" "$(($SECS / 3600))" "$((($SECS % 3600) / 60))" "$(($SECS % 60))"

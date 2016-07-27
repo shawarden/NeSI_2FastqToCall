@@ -63,6 +63,7 @@
 	Added	scriptFailed function to all non-0 exit points.
 	Added	scontrol show job $SLURM_JOBID to scriptFailed function.
 	Added	Reads file size to job name to size-vs-speed filtering.
+	Created	Automatic sample progression. (ASP)
 
 2016-07-22:
 	Fixed	X sub contigs not being linked correctly in their folders .../X/X:1-2699520.g.vxf.gz, etc.
@@ -72,11 +73,21 @@
 	Added	Check for job submission failures. Pipeline will exit 1 in that event.
 	Added	Local spooler lauching sequencial jobs without input.
 
+2016-7-27
+	Fixed	ASP seeing a failed grep as a failed ssh connection. grep failure is ExitCode 1, ssh network failure exitcode is > 1
+
+2016-7-28
+	Added	Contig Count to baserefs.sh.
+
 #########
 # To do #
 #########
 
-Continue to work out minimum requirement to obtain 1 hour max walltime per segment.
+Investigate job arrays to better manage bulk job sumission. NeSI queue length is 5000 jobs. Each array job can contain 1000 sub jobs?
+
+Find out why MarkDuplicates sometimes fails to find input. The dependencies are transmitted but the output doesn't exist when MD starts.
+
+Continue to work out minimum requirement to obtain 1 hour max runtimme per segment within high partition.
 
 Build multi-sample pipeline with identity comparison and merge function.
 
@@ -84,6 +95,6 @@ Add fingerprinting function post bam collection?
 
 Build list of times for each job type and contig to set per-contig wall-times.
 
-Add function to re-run job if it fails because of a node issue, which are suprizingly common. Should trigger a chain of dependant jobs to take it as far as it can outwith the overall process. This will minimize delay on restarting the job later on.
+Add ability to re-try a job if it fails because of a node issues. Could trigger a chain of dependant jobs to take it as far as it can outwith the overall process. This will minimize delay on restarting the job later on.
 
 Migrate input file collection to slurm script. This will allow failed jobs to possibly be run in time for the catvar or catreads functions to collect them. Still wont be 100% effective as job execution depends on cluster availability. Should work well for smaller contigs.

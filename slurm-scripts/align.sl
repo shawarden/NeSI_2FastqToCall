@@ -6,8 +6,8 @@
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
 #SBATCH --mail-type=FAIL
 #SBATCH --constraint=avx
-#SBATCH --error=slurm/align_%j.out
-#SBATCH --output=slurm/align_%j.out
+#SBATCH --error=slurm/PA_%j.out
+#SBATCH --output=slurm/PA_%j.out
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
@@ -19,12 +19,12 @@ READGROUP=${2}
 READ1=blocks/${READGROUP}_R1_${BLOCK}.fastq.gz
 READ2=blocks/${READGROUP}_R2_${BLOCK}.fastq.gz
 
-echo "Align: ${READGROUP} ${READ1} ${READ2} to ${OUTPUT}"
+echo "PA: ${READGROUP} ${READ1} ${READ2} to ${OUTPUT}"
 date
 
 if [ ! -e ${READ1} ] || [ ! -e ${READ2} ]; then
-	echo "Align: A read files doesn't exist!"
-#	scriptFailed "Align"
+	echo "PA: A read files doesn't exist!"
+#	scriptFailed "PA"
 	exit 1
 fi
 
@@ -41,18 +41,20 @@ RG_PU="PU:${FLOW_CELL}.${CELL_LANE}"
 RG_LB="LB:${SAMPLE}"
 RG_SM="SM:$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $1}')"
 
-echo "Align: ${BWA} mem -M -t ${SLURM_JOB_CPUS_PER_NODE} -R @RG'\t'$RG_ID'\t'$RG_PL'\t'$RG_PU'\t'$RG_LB'\t'$RG_SM $REF $READ1 $READ2 | ${SAMTOOLS} view -bh - > ${OUTPUT}" | tee -a ../commands.txt
+echo "PA: ${BWA} mem -M -t ${SLURM_JOB_CPUS_PER_NODE} -R @RG'\t'$RG_ID'\t'$RG_PL'\t'$RG_PU'\t'$RG_LB'\t'$RG_SM $REF $READ1 $READ2 | ${SAMTOOLS} view -bh - > ${OUTPUT}" | tee -a ../commands.txt
 
 ${BWA} mem -M -t ${SLURM_JOB_CPUS_PER_NODE} -R @RG'\t'$RG_ID'\t'$RG_PL'\t'$RG_PU'\t'$RG_LB'\t'$RG_SM $REF $READ1 $READ2 | ${SAMTOOLS} view -bh - > ${OUTPUT}
 
 passed=$((${PIPESTATUS[0]} + ${PIPESTATUS[1]}))
 
-echo "Align: ${READGROUP} ${READ1} and ${READ2} ran for $(($SECONDS / 3600))h $((($SECONDS %3600) / 60))m $(($SECONDS % 60))s"
+#mv ${JOB_TEMP_DIR}/${OUTPUT} ${OUTPUT} && rm ${JOB_TEMP_DIR}/${OUTPUT}
+
+echo "PA: ${READGROUP} ${READ1} and ${READ2} ran for $(($SECONDS / 3600))h $((($SECONDS %3600) / 60))m $(($SECONDS % 60))s"
 date
 
 if [ $passed -ne 0 ] || [ $(stat --printf="%s" ${OUTPUT}) -lt 50 ]; then
-	echo "Align: ${READ1} and ${READ2} failed!"
-#	scriptFailed "Align"
+	echo "PA: ${READ1} and ${READ2} failed!"
+#	scriptFailed "PA"
 	exit 1
 fi
 

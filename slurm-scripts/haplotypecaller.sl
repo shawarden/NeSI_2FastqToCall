@@ -6,8 +6,8 @@
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
 #SBATCH --mail-type=FAIL
 #SBATCH --constraint=avx
-#SBATCH --error=slurm/haplotypecaller_%j.out
-#SBATCH --output=slurm/haplotypecaller_%j.out
+#SBATCH --error=slurm/HC_%j.out
+#SBATCH --output=slurm/HC_%j.out
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
@@ -15,7 +15,7 @@ source /projects/uoo00032/Resources/bin/baserefs.sh
 CONTIG=${2}
 OUTPUT=${3}
 
-echo "Haplo: Command-line: ${0} ${@}"
+echo "HC: Command-line: ${0} ${@}"
 
 if [ -e coverage.sh ]; then
 	# Gender file exists so obtain values from it.
@@ -37,12 +37,12 @@ else
 	intervalPloidy=2
 fi
 
-echo "Haplo: ${INPUT} + ${CONTIG} + ${intervalPloidy} -> ${OUTPUT}"
+echo "HC: ${INPUT} + ${CONTIG}c + ${intervalPloidy}p -> ${OUTPUT}"
 date
 
 if [ ! -e ${INPUT} ]; then
-	echo "Haplo: Input file \"${INPUT}\" doesn't exist!"
-#	scriptFailed "Haplo"
+	echo "HC: Input file \"${INPUT}\" doesn't exist!"
+#	scriptFailed "HC"
 	exit 1
 fi
 
@@ -58,17 +58,17 @@ GATK_ARGS="-T ${GATK_PROC} \
 module load ${MOD_JAVA}
 
 CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar $GATK ${GATK_ARGS} -I ${INPUT} -o ${OUTPUT}"
-echo "Haplo: ${CMD}" | tee -a commands.txt
+echo "HC: ${CMD}" | tee -a commands.txt
 
 ${CMD}
 passed=$?
 
-echo "Haplo: ${INPUT} + ${CONTIG} + ${intervalPloidy} -> ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
+echo "HC: ${INPUT} + ${CONTIG} + ${intervalPloidy} -> ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
 date
 
 if [ $passed -ne 0 ]; then
-	echo "Haplo: ${OUTPUT} failed!"
-#	scriptFailed "Haplo"
+	echo "HC: ${OUTPUT} failed!"
+#	scriptFailed "HC"
 	exit 1
 fi
 

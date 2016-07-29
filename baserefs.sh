@@ -39,8 +39,9 @@ export     MOD_JAVA="Java/1.8.0_5"
 # Contigs #
 ###########
 
-export CONTIGS=$(cat ${REFD} | awk -F'[[:space:]:]' 'NR!=1{print $3}')
-export NUMCONTIGS=$(echo "${CONTIGS}" | wc -w)
+export CONTIGS=$(cat ${REFD} | awk -F'[[:space:]:]' 'NR!=1{print $3}')		# List of contigs.
+export CONTIGA=("" $(cat ${REFD} | awk -F'[[:space:]:]' 'NR!=1{print $3}'))	# Array of contigs. "" at start for 1-indexed.
+export NUMCONTIGS=$(($(echo ${#CONTIGA[@]}) - 1))							# Number of contigs.
 
 #########################
 # GrCh37 Gender regions #
@@ -163,17 +164,33 @@ function storeMetrics {
 	fi
 	
 	printf \
-	"%19s %-50s %-5d %-6d %02d:%02d:%02d\n" \
-	"$(date '+%Y-%m-%d %H:%M:%S')" \
-	"$SLURM_JOB_NAME" \
-	"$SLURM_JOB_CPUS_PER_NODE" \
-	"$(($SLURM_JOB_CPUS_PER_NODE * $SLURM_MEM_PER_CPU))" \
-	"$(($SECONDS / 3600))" \
-	"$((($SECONDS % 3600) / 60))" \
-	"$(($SECONDS % 60))" | \
-	tee -a ${BACKDIR}metrics.txt >> $HOME/metrics.txt
+		"%19s %-50s %-5d %-6d %s\n" \
+		"$(date '+%Y-%m-%d %H:%M:%S')" \
+		${SLURM_JOB_NAME}$([ -z $SLURM_ARRAY_TASK_ID ] && printf "_%s" "${SLURM_ARRAY_TASK_ID}") \
+		${SLURM_JOB_CPUS_PER_NODE} \
+		$((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU})) \
+		$(printHMS $SECONDS) | \
+		tee -a ${BACKDIR}metrics.txt >> ${HOME}/metrics.txt
+}
+
+function appendList {
+	oldList="${1}"
+	newItem="${2}"
+	itemJoiner=$([ "${3}" == "" ] && echo " " || echo "${3}")	# If blank, use space.
+	if [ "$newItem" != "" ]; then
+		if [ "$oldList" == "" ]; then
+			# Initial Entry
+			printf "%s" "$newItem"
+		else
+			# Additional Entry
+			printf "%s%s%s" "$oldList" "$itemJoiner" "$newItem"
+		fi
+	else
+		printf "%s" "$oldList"
+	fi
 }
 
 export -f printHMS
 export -f scriptFailed
 export -f storeMetrics
+export -f appendList

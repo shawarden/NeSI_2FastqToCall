@@ -6,8 +6,8 @@
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
 #SBATCH --mail-type=FAIL
 #SBATCH --constraint=avx
-#SBATCH --error=slurm/baserecal_%j.out
-#SBATCH --output=slurm/baserecal_%j.out
+#SBATCH --error=slurm/BR_%j.out
+#SBATCH --output=slurm/BR_%j.out
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
@@ -15,12 +15,12 @@ source /projects/uoo00032/Resources/bin/baserefs.sh
 CONTIG=${2}
 OUTPUT=${3}
 
-echo "BQSR: ${INPUT} -> ${OUTPUT}"
+echo "BR: ${INPUT} -> ${OUTPUT}"
 date
 
 if [ ! -e ${INPUT} ]; then
-	echo "BQSR: Input file \"${INPUT}\" doesn't exist!"
-#	scriptFailed "BQSR"
+	echo "BR: Input file \"${INPUT}\" doesn't exist!"
+#	scriptFailed "BR"
 	exit 1
 fi
 
@@ -35,17 +35,17 @@ GATK_ARGS="-T ${GATK_PROC} \
 module load ${MOD_JAVA}
 
 CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${GATK} ${GATK_ARGS} -I ${INPUT} -o ${OUTPUT}"
-echo "BQSR: ${CMD}" | tee -a commands.txt
+echo "BR: ${CMD}" | tee -a commands.txt
 
 ${CMD}
 passed=$?
 
-echo "BQSR: ${INPUT} -> ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS %3600) / 60))m $(($SECONDS % 60))s"
+echo "BR: ${INPUT} -> ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS %3600) / 60))m $(($SECONDS % 60))s"
 date
 
 if [ $passed -ne 0 ]; then
-	echo "BQSR: ${INPUT} Failed."
-#	scriptFailed "BQSR"
+	echo "BR: ${INPUT} Failed."
+#	scriptFailed "BR"
 	exit 1
 fi
 

@@ -6,8 +6,8 @@
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
 #SBATCH --mail-type=FAIL
 # No resource contrains as this is just a batch script.
-#SBATCH --error=slurm/coverage_%j.out
-#SBATCH --output=slurm/coverage_%j.out
+#SBATCH --error=slurm/GD_%j.out
+#SBATCH --output=slurm/GD_%j.out
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
@@ -17,7 +17,7 @@ PLATFORM=${3}
 OUTPUT=coverage.sh
 
 echo "#This file contains gender definitions for this individual." | tee ${OUTPUT}
-echo "#GenDet: ${READGROUP} ${PLATFORM}" | tee -a ${OUTPUT}
+echo "#GD: ${READGROUP} ${PLATFORM}" | tee -a ${OUTPUT}
 echo "" | tee -a ${OUTPUT}
 
 source ${PLATFORMS}/${PLATFORM}.sh
@@ -35,8 +35,8 @@ for contig in ${CONTIGS}; do
 	INPUT=depth/${contig}/${IDN}.sample_summary
 	if [ ! -e ${INPUT} ]; then
 		# Oh crappola!
-		echo "#GenDet: ${contig} file ${INPUT} doesn't exist!" | tee -a ${OUTPUT}
-		echo "#FAIL!" | tee -a ${OUTPUT}
+		echo "#${contig} file ${INPUT} doesn't exist!" | tee -a ${OUTPUT}
+		echo "exit 1" | tee -a ${OUTPUT}
 		exit 1
 	fi
 	

@@ -6,8 +6,8 @@
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
 #SBATCH --mail-type=FAIL
 #SBATCH --constraint=avx
-#SBATCH --error=slurm/mergecontigs_%j.out
-#SBATCH --output=slurm/mergecontigs_%j.out
+#SBATCH --error=slurm/MC_%j.out
+#SBATCH --output=slurm/MC_%j.out
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
@@ -15,16 +15,16 @@ CONTIG=${1}
 OUTPUT=${2}
  CLEAN=${3}
 
-echo "MergeSAM: ${CONTIG} -> ${OUTPUT}"
+echo "MC: ${CONTIG} -> ${OUTPUT}"
 date
 
 contigMerBlocks=$(find . -type f -iwholename "*/contig/${CONTIG}/*.bam" -printf '%h\0%d\0%p\n' | sort -t '\0' -n | awk -F '\0' '{print $3}')
 if [ "${contigMerBlocks}" == "" ]; then
-	echo "MergeSAM: Merge contig ${CONTIG} contains no files!"
-#	scriptFailed "MergeSAM"
+	echo "MC: Merge contig ${CONTIG} contains no files!"
+#	scriptFailed "MC"
 	exit 1
 else
-	echo "MergeSAM: Merge contig ${CONTIG} will run ${contigMerBlocks}"
+	echo "MC: Merge contig ${CONTIG} will run ${contigMerBlocks}"
 fi
 
 mergeList=""
@@ -32,15 +32,15 @@ for file in ${contigMerBlocks}; do
 	if [ -e $file ]; then
 		mergeList="${mergeList} I=${file}"
 	else
-		echo "MergeSAM: Input file $file doesn't exist!"
-#		scriptFailed "MergeSAM"
+		echo "MC: Input file $file doesn't exist!"
+#		scriptFailed "MC"
 		exit 1
 	fi
 done
 
 if [ "$mergeList" == "" ]; then
-	echo "MergeSAM: No inputs defined!"
-#	scriptFailed "MergeSAM"
+	echo "MC: No inputs defined!"
+#	scriptFailed "MC"
 	exit 1
 fi
 
@@ -54,18 +54,18 @@ TMP_DIR=${JOB_TEMP_DIR}"
 module load ${MOD_JAVA}
 
 CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} MergeSamFiles ${PIC_ARGS} ${mergeList} O=${OUTPUT}"
-echo "MergeSAM: ${CMD}" | tee -a commands.txt
+echo "MC: ${CMD}" | tee -a commands.txt
 
 ${CMD}
 passed=$?
 
 # Report run time.
-echo "MergeSAM: ran for $(($SECONDS / 3600))h $((($SECONDS %3600) / 60))m $(($SECONDS % 60))s"
+echo "MC: ran for $(($SECONDS / 3600))h $((($SECONDS %3600) / 60))m $(($SECONDS % 60))s"
 date
 
 if [ $passed -ne 0 ]; then
-	echo "MergeSAM: ${CONTIG} failed!"
-#	scriptFailed "MergeSAM"
+	echo "MC: ${CONTIG} failed!"
+#	scriptFailed "MC"
 	exit 1
 fi
 

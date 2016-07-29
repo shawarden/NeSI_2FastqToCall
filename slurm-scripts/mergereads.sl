@@ -6,8 +6,8 @@
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
 #SBATCH --mail-type=FAIL
 #SBATCH --constraint=avx
-#SBATCH --error=slurm/mergereads_%j.out
-#SBATCH --output=slurm/mergereads_%j.out
+#SBATCH --error=slurm/MR_%j.out
+#SBATCH --output=slurm/MR_%j.out
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
@@ -15,18 +15,18 @@ source /projects/uoo00032/Resources/bin/baserefs.sh
 OUTPUT=${2}
  CLEAN=${3}
 
-echo "MergeReads: ${INPUT} -> ${OUTPUT}"
+echo "MR: ${INPUT} -> ${OUTPUT}"
 date
 
 inputCount=$(echo "${INPUT}" | wc -w)
 contigCount=$(echo "${CONTIGS}" | wc -w)
 
 if [ $inputCount -ne $contigCount ]; then
-	echo "MergeReads: Input chunks (${inputCount}) doesn't match contig count (${contigCount})!"
-#	scriptFailed "MergeReads"
+	echo "MR: Input chunks (${inputCount}) doesn't match contig count (${contigCount})!"
+#	scriptFailed "MR"
 	exit 1
 else
-	echo "MergeReads: Input chunks (${inputCount}) matches contig count (${contigCount})."
+	echo "MR: Input chunks (${inputCount}) matches contig count (${contigCount})."
 fi
 
 mergeList=""
@@ -34,15 +34,15 @@ for file in ${INPUT}; do
 	if [ -e $file ]; then
 		mergeList="${mergeList} I=${file}"
 	else
-		echo "MergeReads: Input file $file doesn't exist!"
-		scriptFailed "MergeReads"
+		echo "MR: Input file $file doesn't exist!"
+		scriptFailed "MR"
 		exit 1
 	fi
 done
 
 if [ "$mergeList" == "" ]; then
-	echo "MergeReads: No inputs defined!"
-#	scriptFailed "MergeReads"
+	echo "MR: No inputs defined!"
+#	scriptFailed "MR"
 	exit 1
 fi
 
@@ -56,18 +56,18 @@ TMP_DIR=${JOB_TEMP_DIR}"
 module load ${MOD_JAVA}
 
 CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} MergeSamFiles ${PIC_ARGS} ${mergeList} O=${OUTPUT}"
-echo "MergeReads: ${CMD}" | tee -a commands.txt
+echo "MR: ${CMD}" | tee -a commands.txt
 
 ${CMD}
 passed=$?
 
 # Report run time.
-echo "MergeReads: ran for $(($SECONDS / 3600))h $((($SECONDS %3600) / 60))m $(($SECONDS % 60))s"
+echo "MR: ran for $(($SECONDS / 3600))h $((($SECONDS %3600) / 60))m $(($SECONDS % 60))s"
 date
 
 if [ $passed -ne 0 ]; then
-	echo "MergeReads: ${CONTIG} failed!"
-#	scriptFailed "MergeReads"
+	echo "MR: ${CONTIG} failed!"
+#	scriptFailed "MR"
 	exit 1
 fi
 

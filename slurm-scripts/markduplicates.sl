@@ -6,20 +6,20 @@
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
 #SBATCH --mail-type=FAIL
 #SBATCH --constraint=avx
-#SBATCH --error=slurm/markdup_%j.out
-#SBATCH --output=slurm/markdup_%j.out
+#SBATCH --error=slurm/MD_%j.out
+#SBATCH --output=slurm/MD_%j.out
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
  INPUT=${1}
 OUTPUT=${2}
 
-echo "MarkDup: ${INPUT} -> ${OUTPUT}"
+echo "MD: ${INPUT} -> ${OUTPUT}"
 date
 
 if [ ! -e ${INPUT} ]; then
-	echo "MarkDup: Input file \"${INPUT}\" doesn't exist!"
-#	scriptFailed "MarkDup"
+	echo "MD: Input file \"${INPUT}\" doesn't exist!"
+#	scriptFailed "MD"
 	exit 1
 fi
 
@@ -31,19 +31,19 @@ TMP_DIR=${JOB_TEMP_DIR}"
 
 module load ${MOD_JAVA}
 
-CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} MarkDuplicates ${PIC_ARGS} INPUT=${INPUT} OUTPUT=${OUTPUT}"
-echo "MarkDup: ${CMD}" | tee -a commands.txt
+CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} MDlicates ${PIC_ARGS} INPUT=${INPUT} OUTPUT=${OUTPUT}"
+echo "MD: ${CMD}" | tee -a commands.txt
 
 ${CMD}
 passed=$?
 
-echo "MarkDup: ${INPUT} -> ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS %3600) / 60))m $(($SECONDS % 60))s"
+echo "MD: ${INPUT} -> ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS %3600) / 60))m $(($SECONDS % 60))s"
 date
 
 if [ $passed -ne 0 ]
 then
-	echo "MarkDup: ${INPUT} failed!"
-#	scriptFailed "MarkDup"
+	echo "MD: ${INPUT} failed!"
+#	scriptFailed "MD"
 	exit 1
 fi
 

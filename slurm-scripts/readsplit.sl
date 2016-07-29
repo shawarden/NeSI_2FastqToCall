@@ -6,8 +6,8 @@
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
 #SBATCH --mail-type=FAIL
 #SBATCH --constraint=avx
-#SBATCH --error=slurm/readsplit_%j.out
-#SBATCH --output=slurm/readsplit_%j.out
+#SBATCH --error=slurm/RS_%j.out
+#SBATCH --output=slurm/RS_%j.out
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
@@ -15,11 +15,11 @@ source /projects/uoo00032/Resources/bin/baserefs.sh
  READNUM=${2}
 READFILE=${3}
 
-echo "ReadSplit: ${READNUM} ${READFILE}"
+echo "RS: ${READNUM} ${READFILE}"
 date
 
 if [ ! -e ${READFILE} ]; then
-	echo "ReadSplit: Can't find ${READFILE}"
+	echo "RS: Can't find ${READFILE}"
 #	scriptFailed "ReadSplit"
 	exit 1
 fi
@@ -59,10 +59,10 @@ function splitByReadGroupAndCompress {
 			if (system("[ -e blocks/*_"readNumber"_"curBlock".fastq.gz.done ]") == 0) {
 				# a blocks/..._Rn_00000.fastq.gz.done file exists so skip this block
 				writeBlock=0
-				print "ReadSplit: Skipping block "curBlock" as it is already completed!"
+				print "RS: Skipping block "curBlock" as it is already completed!"
 			} else {
 				writeBlock=1
-				print "ReadSplit: Block "curBlock" does not exist yet. Writing..."
+				print "RS: Block "curBlock" does not exist yet. Writing..."
 			}
 		}
 		NR%4==1{
@@ -71,9 +71,9 @@ function splitByReadGroupAndCompress {
 				if (writeBlock) {
 					close (outStream)
 					system("touch "outFile".done")
-					print "ReadSplit: Block "curBlock" with "readsProcessed" reads. Now writing to "sprintf("%05d", blockCount)
+					print "RS: Block "curBlock" finished at "readsProcessed" reads. Starting "sprintf("%05d", blockCount)
 				} else {
-					print "ReadSplit: Block "curBlock" already written. Moving on to "sprintf("%05d", blockCount)
+					print "RS: Block "curBlock" already written. Moving on to "sprintf("%05d", blockCount)
 				}
 				
 				# Spawn alignment if the next block in the sequence exists for both reads.
@@ -85,7 +85,7 @@ function splitByReadGroupAndCompress {
 				
 				if (system("[ -e "outFile".done ]") == 0) {
 					# The new outfile.done already exists! Skip this block
-					print "ReadSplit: Skipping block "curBlock" as it is already completed!"
+					print "RS: Skipping block "curBlock" as it is already completed!"
 					writeBlock=0
 				} else {
 					writeBlock=1
@@ -132,9 +132,9 @@ function splitByReadGroupAndCompress {
 			if (writeBlock) {
 				close (outStream)
 				system("touch "outFile".done")
-				print "ReadSplit: Block "blockCount" with "readsProcessed" read."
+				print "RS: Block "blockCount" with "readsProcessed" read."
 			} else {
-				print "ReadSplit: Block "blockCount" already exists with "readsProcessed" reads."
+				print "RS: Block "blockCount" already exists with "readsProcessed" reads."
 			}
 			
 			system(pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "curBlock)
@@ -144,24 +144,24 @@ function splitByReadGroupAndCompress {
 [ "$(which pigz)" != "" ] && ZIP_CMD="pigz" || ZIP_CMD="gzip"
 [ "${READFILE##*.}" != "gz" ] && CAT_CMD=cat || CAT_CMD="${ZIP_CMD} -cd"
 
-echo "ReadSplit: Zip command: ${ZIP_CMD}"
-echo "ReadSplit: Cat command: ${CAT_CMD}"
+echo "RS: Zip command: ${ZIP_CMD}"
+echo "RS: Cat command: ${CAT_CMD}"
 
 bestIndex=$(getBestIndex)
 
-echo "ReadSplit: Best index is [${bestIndex}]"
+echo "RS: Best index is [${bestIndex}]"
 
 mkdir -p blocks
 
 splitByReadGroupAndCompress
 passed=$?
 
-echo "ReadSplit: Splitting ${READFILE} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
+echo "RS: Splitting ${READFILE} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
 date
 
 if [ $passed -ne 0 ]; then
-	echo "ReadSplit: Failed to split ${READFILE}"
-#	scriptFailed "ReadSplit"
+	echo "RS: Failed to split ${READFILE}"
+#	scriptFailed "RS"
 	exit 1
 fi
 
@@ -169,12 +169,12 @@ fi
 #then
 #	for prefix in $(cat ${READNUM}_ReadGroup.txt)
 #	do
-#		echo "ReadSplit: Compressing ReadGroup ${prefix}: $(sbatch -J ReadMultiple_${prefix} s0_split_multiple.sl ${prefix}_${READNUM} | awk '{print $4}')"
+#		echo "RS: Compressing ReadGroup ${prefix}: $(sbatch -J ReadMultiple_${prefix} s0_split_multiple.sl ${prefix}_${READNUM} | awk '{print $4}')"
 #	done;
 #	exit 1
 #fi
 
-rm ${READFILE}
+#rm ${READFILE}
 
 touch ${SAMPLE}_${READNUM}_split.done
 

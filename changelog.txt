@@ -77,7 +77,12 @@
 	Fixed	ASP seeing a failed grep as a failed ssh connection. grep failure is ExitCode 1, ssh network failure exitcode is > 1
 
 2016-7-28
-	Added	Contig Count to baserefs.sh.
+	Added	Contig Count to baserefs.sh
+
+2016-07-29
+	Changed	ContigSplit function to be array job. Now submits 1 job array per block instead of 84. Array is dynamically created based on .done file existence.
+	Merged	CatReads and CatReadsIndex jobs into 1. Increase walltime to accomodate both jobs. ~30m cat, 45m index.
+	Changed	Log output header to 2 character combos. RS: Read Split, PA: Primary alignment, SS: SortSAM, etc...
 
 #########
 # To do #
@@ -98,3 +103,5 @@ Build list of times for each job type and contig to set per-contig wall-times.
 Add ability to re-try a job if it fails because of a node issues. Could trigger a chain of dependant jobs to take it as far as it can outwith the overall process. This will minimize delay on restarting the job later on.
 
 Migrate input file collection to slurm script. This will allow failed jobs to possibly be run in time for the catvar or catreads functions to collect them. Still wont be 100% effective as job execution depends on cluster availability. Should work well for smaller contigs.
+
+Re-write everything. Check-Blocks is a bloated mess.

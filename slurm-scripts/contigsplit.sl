@@ -1,43 +1,46 @@
 #!/bin/bash
-#SBATCH -A uoo00032
+#SBATCH --account uoo00032
 #SBATCH --time=00:10:00
 #SBATCH --mem-per-cpu=2048
 #SBATCH --cpus-per-task=2
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
 #SBATCH --mail-type=FAIL
 #SBATCH --constraint=avx
-#SBATCH --error=slurm/contigsplit_%j.out
-#SBATCH --output=slurm/contigsplit_%j.out
+#SBATCH --error=slurm/CS_%A_%a.out
+#SBATCH --output=slurm/CS_%A_%a.out
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
 SAMPLE=${1}
-CONTIG=${2}
- INPUT=${3}
-OUTPUT=${4}
+INPUT=${2}
+BLOCK=${3}
 
-echo "ContigSplit: ${INPUT} by contig ${CONTIG} to ${OUTPUT}"
+CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
+OUTPUT=split/${CONTIG}/split_${BLOCK}.bam
+
+
+echo "CS: ${INPUT} by contig ${CONTIG} to ${OUTPUT}"
 date
 
 if [ ! -e ${INPUT} ]; then
-	echo "ContigSplit: Input file \"${INPUT}\" doesn't exist!"
-#	scriptFailed "ContigSplit"
+	echo "CS: Input file \"${INPUT}\" doesn't exist!"
+#	scriptFailed "CS"
 	exit 1
 fi
 
-CMD="${SAMTOOLS} view -bh -@ 1 ${INPUT} ${CONTIG}"
-echo "ContigSplit: ${CMD} > ${OUTPUT}" | tee -a ../commands.txt
+CMD="${SAMTOOLS} view -bh -@ 1 ${INPUT} ${CONTIG} > ${OUTPUT}"
+echo "CS: ${CMD}" | tee -a ../commands.txt
 
-${CMD} > ${OUTPUT}
+eval ${CMD}
 passed=$?
 
-echo "ContigSplit: ${INPUT} to ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
+echo "CS: ${INPUT} to ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
 date
 
 if [ $passed -ne 0 ]
 then
-	echo "ContigSplit: ${INPUT} to ${CONTIG} Failed!"
-#	scriptFailed "ContigSplit"
+	echo "CS: ${INPUT} to ${CONTIG} Failed!"
+#	scriptFailed "CS"
 	exit 1
 fi
 

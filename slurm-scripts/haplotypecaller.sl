@@ -11,9 +11,15 @@
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
- INPUT=${1}
+IDN=${1}
 CONTIG=${2}
-OUTPUT=${3}
+
+if [ "${CONTIG}" == "" ]; then	# Contig not defined. X & Y subtypes.
+	CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
+fi
+
+ INPUT=printreads/${CONTIG}/printreads.bam
+OUTPUT=haplo/${CONTIG}/${IDN}.g.vcf.gz
 
 echo "HC: Command-line: ${0} ${@}"
 

@@ -13,10 +13,10 @@ READ2=${FASTQS}/${3}
 PLATFORM=${4}
 LOCATION=${5}
 
-echo "SpoolSamples: SampleID:   ${SAMPLE}"
-echo "SpoolSamples: Read1 File: ${READ1}"
-echo "SpoolSamples: Read2 File: ${READ2}"
-echo "SpoolSamples: PLATFORM:   ${PLATFORM}"
+printf "%-12s%s\n" "SampleID" "${SAMPLE}"
+printf "%-12s%s\n" "Read 1" "${READ1}"
+printf "%-12s%s\n" "Read 2" "${READ2}"
+printf "%-12s%s\n" "PLATFORM" "${PLATFORM}"
 
 IDN=$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $1}')
 DNA=$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $2}')
@@ -45,7 +45,7 @@ date '+%Y%m%d_%H%M%S' > ${WORK_PATH}/${IDN}/starttime.txt
 
 # Purge existing merge dependencies, just in case!
 if [ -d ${SAMPLE_PATH}/mergeDeps ]; then
-	echo "SpoolSamples: Purging mergeDep!"
+	printf "%-12s%s\n" "Purging" "mergeDep!"
 	rm -r ${SAMPLE_PATH}/mergeDeps
 fi
 
@@ -59,21 +59,21 @@ if [ ! -e ${SAMPLE}_R1_split.done ] || [ ! -e ${SAMPLE}_R2_split.done ]; then
 		# Read 1 split isn't complete, run it now.
 		read1Size=$(ls -lah ${READ1} | awk '{print $5}')
 		DEP_SR1=$(sbatch -J RS_${SAMPLE}_R1_${read1Size} ${SLSBIN}/readsplit.sl ${SAMPLE} R1 ${READ1} | awk '{print $4}')
-		echo "SpoolSamples: Read Split 1: ${DEP_SR1}"
+		printf "%-12s%s\n" "Split 1" "${DEP_SR1}"
 	else
-		echo "Spool amples: Read Split 1: Already completed!"
+		printf "%-12s%s\n" "Split 1" "Done!"
 	fi
 	
 	if [ ! -e ${SAMPLE}_R2_split.done ]; then
 		# Read 2 split isn't complete. run it now.
 		read2Size=$(ls -lah ${READ2} | awk '{print $5}')
 		DEP_SR2=$(sbatch -J RS_${SAMPLE}_R2_${read2Size} ${SLSBIN}/readsplit.sl ${SAMPLE} R2 ${READ2} | awk '{print $4}')
-		echo "SpoolSamples: Read Split 2: ${DEP_SR2}"
+		printf "%-12s%s\n" "Split 2" "${DEP_SR2}"
 	else
-		echo "SpoolSamples: Read Split 2: Already completed!"
+		printf "%-12s%s\n" "Split 2" "Done!"
 	fi
 else
-	echo "SpoolSamples: Split Reads completed. Spooling alignments."
+	printf "%-12s%s\n" "Split" "Done! Aligning..."
 	# Both reads are done. Build read list and spool alignments.
 	READGROUP=$(cat blocks/R1_ReadGroup.txt)
 	readBlocks=$(($(find ./blocks -type f -iname "${READGROUP}_R1_*.fastq.gz.done" | wc -l) -1))

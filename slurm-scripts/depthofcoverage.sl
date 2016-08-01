@@ -11,10 +11,10 @@
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
-   INPUT=${1}
-  CONTIG=${2}
-PLATFORM=${3}
-  OUTPUT=${4}
+  CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
+   INPUT=printreads/${CONTIG}/printreads.bam
+PLATFORM=${1}
+  OUTPUT=depth/${CONTIG}/depth
 
 echo "DC: ${INPUT} + ${PLATFORM} -> ${OUTPUT}"
 date

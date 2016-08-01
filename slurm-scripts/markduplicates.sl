@@ -11,8 +11,9 @@
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
- INPUT=${1}
-OUTPUT=${2}
+CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
+ INPUT=merged/${CONTIG}/merged.bam
+OUTPUT=markdup/${CONTIG}/markdupped.bam
 
 echo "MD: ${INPUT} -> ${OUTPUT}"
 date
@@ -31,7 +32,7 @@ TMP_DIR=${JOB_TEMP_DIR}"
 
 module load ${MOD_JAVA}
 
-CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} MDlicates ${PIC_ARGS} INPUT=${INPUT} OUTPUT=${OUTPUT}"
+CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} MarkDuplicates ${PIC_ARGS} INPUT=${INPUT} OUTPUT=${OUTPUT}"
 echo "MD: ${CMD}" | tee -a commands.txt
 
 ${CMD}

@@ -19,17 +19,42 @@
 
 # Update history
 
+## 2016-08-02
+
+### Changed
+- MarkDuplicates, BaseRecalibrator, PrintReads, DepthOfCoverage and Haplotype caller (non MT or sex Chr) to array submission and tied array element dependency to matching element in previous array. Testing shows individual array element will wait only for their own dependency before starting.
+- Separated CatReads from ReadIndex to allow job chaining.
+- CatReads to sequential job chain for catting -> transfer reads & ReadIndex.
+- ReadIndex to sequential job chain for indexing -> transfer index.
+- CatVariants to sequential job chain for catting -> transfer variants & transfer index.
+
+### Added
+- Function comments, because everyone loves comments.
+- tieTaskDeps function to tie a given task array's dependencies to the previous task array's matching element via SCONTROL UPDATE.
+- Start-time delay for subsequent arrays so they cannot start until per-array-element dependencies are set correctly.
+
+### Removed
+- Initial job dependencies for subsequent arrays as these will prevent the entire array from starting until the entire previous array has completed.
+
+### Fixed
+- MergeContig not collecting ContigSplit array dependencies.
+- MergeContig trying to write to wrong location.
+
 ## 2016-08-01
+
 ### Changed
 - Reformatted changelog/readme for github display.
 - MergeContig converted to array submission method.
 - Logging output method to sequencial instead of buffered to more accurately represent submission rate.
+- File path simplification to enable better clean-up later on.
+
 ### Added
 - About section to README.md
 - Delay on each contig for markdup to haplotype segment as job submission rate exceeded limits.
 - Skip message for X, Y and MT contigs in primary calling loop.
 
 ## 2016-07-29
+
 ### Changed
 - ContigSplit function to be array job. Now submits 1 job array per block instead of 84. Array is dynamically created based on .done file existence.
 - Log output header to 2 character combos. RS: Read Split, PA: Primary alignment, SS: SortSAM, etc...
@@ -40,24 +65,29 @@
 - CatReads and CatReadsIndex jobs into 1. Increase walltime to accomodate both jobs. ~30m cat, 45m index.
 
 ## 2016-7-28
+
 ### Added
 - Contig Count to baserefs.sh
 
 ## 2016-7-27
+
 ### Fixed
 - ASP seeing a failed grep as a failed ssh connection. grep failure is ExitCode 1, ssh network failure exitcode is > 1
 
 ## 2016-07-25
+
 ### Added
 - Check for job submission failures. Pipeline will exit 1 in that event.
 - Local spooler lauching sequencial jobs without input.
 
 ## 2016-07-22:
+
 ### Fixed
 - X sub contigs not being linked correctly in their folders .../X/X:1-2699520.g.vxf.gz, etc.
 - MT contig being included in HaplotypeCaller after removing input collection from primary loop.
 
 ## 2016-07-21:
+
 ### Changed
 - CatVarInputs to generate independent of main cycle so X&Y don't need to be resorted by CatVar.
 - Global temp directory to be SLURM provided one so minimize chances of job fail due to temp directory failure.
@@ -67,79 +97,100 @@
 - CatVariants walltime to 3 hours as longest runtime is ~2 hours
 - SortSam walltime from 3 hours to 1.5 as longest runtime is 30 minutes
 - Mark Duplicates memory allocation from 32G to 16G as no different in runtime and walltime from 6 hours to 2 as longest runtime is just over 1 hour.
+
 ### Added
 - scriptFailed function to all non-0 exit points.
 - scontrol show job $SLURM_JOBID to scriptFailed function.
 - Reads file size to job name to size-vs-speed filtering.
-### Created
 - Automatic sample progression. (ASP)
 
 ## 2016-07-20:
+
 ### Added
 - scriptFailed function to collect basic node data when a job fails for any reason.
+
 ### Fixed
 - Coverage & Gender Determination not collecting GL* PrintRead dependencies.
+
 ### Changed
 - HaplotypeCaller cpu-per-task & mem-per-cpu from 2x32 to 4x8 to boost parallelization but reduce overall memory requirement as this extra memory no longer affects run-time.
 - SortSam mem-per-cpu from 32G to 16G as this has no effect on runtime.
 
 ## 2016-07-19:
+
 ### Created
 - CatPrintReads & Index scripts to replace MergeReads. Picard MergeSamFiles takes 6 to 10 hours to complete. SAMTools Cat takes 30 minutes.
+
 ### Added
 - Global temp directory definition to minimise network thrashing.
 
 ## 2016-07-18:
+
 ### Changed
 - HaplotypeCaller cpu-per-task from 1 to 2 to test if -nct parallelization has been resolved in this version of GATK.
 
 ## 2016-07-15:
+
 ### Added
 - SLURM based parallelization calculation to GATK arguments.
+
 ### Changed
 - HaplotypeCaller mem-per-cpu from 16G to 32G to test if extra memory decreases run-time
 
 ## 2016-07-14:
+
 ### Added
 - parallelization option to HaplotypeCaller function as this has been resolved in GATK and it will reduce runtime.
 
 ## 2016-07-12:
+
 ### Added
 - duplicate metrics storage for sample.
 
 ## 2016-07-11:
+
 ### Added
 - global module version definitions.
 
 ## 2016-07-07:
+
 ### Added
 - check for previously finished jobs.
 
 ## 2016-07-05:
+
 ### Added
 - SLURM based memory calculation to java arguments.
 
 ## 2016-07-01:
+
 ### Added
 - FASTQ scan definitions.
 
 ## 2016-06-28:
+
 ### Added
 - contig definition to for automation.
 
 ## 2016-06-13:
-### Created
+
+### Added
 - base reference file to reduce data replication across multiple scripts.
 
 ## 2016-06-08:
+
 ### Removed
 - trimming process as BWA & GATK tools can handle quality based trimming and adapters.
 
 ## 2016-06-02:
-### Created
+
+### Added
 - Cluster project.
 
 # To do
+
+## Cleanup
+- Add process to clean up sorted block output when all contig splitting has completed. Could contigsplit be used to check if all other contig splits are finished and clean up by itself? Would like to tarball the rest of the folder structure to logging sake.
 
 ## Bulk
 - Investigate job arrays to better manage bulk job sumission. NeSI queue length is ~5000 jobs. Each array job can contain 1000 sub jobs.

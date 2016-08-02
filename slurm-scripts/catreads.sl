@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --account uoo00032
-#SBATCH --time=02:00:00
+#SBATCH --time=01:00:00
 #SBATCH --mem-per-cpu=4096
 #SBATCH --cpus-per-task=1
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
@@ -14,6 +14,7 @@ source /projects/uoo00032/Resources/bin/baserefs.sh
 INPUT=${1}
 OUTPUT=${2}
 INDEX_OUTPUT=${OUTPUT%.bam}.bai
+IDN=$(echo $SLURM_JOB_NAME | cut -d'_' -f2)
 
 HEADER=$(echo ${INPUT} | awk '{print $1}')
 
@@ -39,28 +40,25 @@ else
 	echo "CR: Input file count (${inputCount}) matches contig count (${contigCount})"
 fi
 
-CMD1="$(which srun) ${SAMTOOLS} cat -h ${HEADER} -o ${OUTPUT} ${INPUT}"
-CMD2="$(which srun) ${SAMTOOLS} index ${OUTPUT} ${INDEX_OUTPUT}"
+CMD="$(which srun) ${SAMTOOLS} cat -h ${HEADER} -o ${OUTPUT} ${INPUT}"
 echo "CR: ${CMD1}, ${CMD2}" | tee -a commands.txt
 
-${CMD1}
+${CMD}
 passed=$?
 
-if [ $passed -eq 0 ]; then
-	${CMD2}
-	passed=$?
-fi
-
-echo "CR: ${INPUT} -> ${OUTPUT} & ${INDEX_OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
+echo "CR: ${INPUT} -> ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
 date
 
 if [ $passed -ne 0 ]; then
-	echo "CR: ${INPUT} -> ${OUTPUT} & ${INDEX_OUTPUT} Failed!"
+	echo "CR: ${INPUT} -> ${OUTPUT} Failed!"
 #	scriptFailed "CR"
 	exit 1
 fi
 
 touch ${OUTPUT}.done
+
+sbatch -J TR_${IDN} ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}
+sbatch -J RI_${IDN} ${SLSBIN}/catreadsindex.sl ${OUTPUT} ${OUTPUT%.bam}.bai
 
 storeMetrics
 

@@ -25,6 +25,25 @@ if [ ! -e ${INPUT} ]; then
 	exit 1
 fi
 
+platformBED=${PLATFORMS}/${PLATFORM}.bed
+  genderBED=${PLATFORMS}/$([ "${PLATFORM}" == "Genomic" ] && echo -ne "AV5" || echo -ne "${PLATFORM}" ).bed
+  
+# Special cases for X and Y depth of covereage as the X/YPAR1 and X/YPAR2 regions are distorted.
+# Genomic Y is rife with repeat sequences that inflate coverage so use AV5 region for that.
+# X: █▄▄▄▄▄▄▄█
+# Y: _▄▄▄▄▄▄▄_
+if [ "${CONTIG}" == "X" ]; then
+	platformFile=${genderBED}
+	actualContig=${TRUEX}
+elif [ "${CONTIG}" == "Y" ]; then
+	platformFile=${genderBED}
+	actualContig=${TRUEY}
+else
+	platformFile=${platformBED}
+	actualContig=${CONTIG}
+fi
+
+
 GATK_PROC=DepthOfCoverage
 GATK_ARGS="-T ${GATK_PROC} \
 -R ${REFA} \

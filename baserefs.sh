@@ -137,11 +137,17 @@ export OPENBLAS_MAIN_FREE=1
 # Helper functions #
 ####################
 
+###################
+# Output HH:MM:SS format for a number of seconds.
+###################
 function printHMS {
 	SECS=${1}
 	printf "%02d:%02d:%02d" "$(($SECS / 3600))" "$((($SECS % 3600) / 60))" "$(($SECS % 60))"
 }
 
+#######################
+# Output basic node information on job failure.
+#######################
 function scriptFailed {
 	HEADER=${1}
 	echo ""
@@ -156,6 +162,9 @@ function scriptFailed {
 	echo ""
 }
 
+#######################
+# Output runtime metrics to a log file.
+#######################
 function storeMetrics {
 	if [ "${1}" != "" ]; then
 		BACKDIR="../"
@@ -166,17 +175,24 @@ function storeMetrics {
 	printf \
 		"%19s %-50s %-5d %-6d %s\n" \
 		"$(date '+%Y-%m-%d %H:%M:%S')" \
-		${SLURM_JOB_NAME}$([ -z $SLURM_ARRAY_TASK_ID ] && printf "_%s" "${SLURM_ARRAY_TASK_ID}") \
+		${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && printf "_%s" "${CONTIGA[${SLURM_ARRAY_TASK_ID}]}") \
 		${SLURM_JOB_CPUS_PER_NODE} \
 		$((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU})) \
 		$(printHMS $SECONDS) | \
 		tee -a ${BACKDIR}metrics.txt >> ${HOME}/metrics.txt
 }
 
+#####################
+# Return a string with a new item on the end
+# Items are separated by a char or space
+#####################
 function appendList {
 	oldList="${1}"
 	newItem="${2}"
-	itemJoiner=$([ "${3}" == "" ] && echo " " || echo "${3}")	# If blank, use space.
+	itemJoiner=$([ "${3}" == "" ] && echo -ne " " || echo -ne "${3}")	# If blank, use space.
+	
+#	(>&2 echo "${oldList}${itemJoiner}${newItem}")
+	
 	if [ "$newItem" != "" ]; then
 		if [ "$oldList" == "" ]; then
 			# Initial Entry
@@ -190,7 +206,41 @@ function appendList {
 	fi
 }
 
+######################
+# Return the string with the split char replaced by a space
+######################
+function splitByChar {
+	input=${1}
+	char=${2}
+	
+	echo -ne "${input}" | sed -e "s/${char}/ /g"
+}
+
+######################
+# Find matching task elements in a parent and child array.
+# Set the child array task element to be dependent on the matching parent task element.
+######################
+function tieTaskDeps {
+	childArray=${1}
+	childJobID=${2}
+	parentArray=${3}
+	parentJobID=${4}
+	
+	# Assign each element in markdup array to matching element in mergecontig array
+	for i in $(splitByChar $childArray ","); do
+		for j in $(splitByChar $parentArray ","); do
+			if [ $i -eq $j ]; then
+#				printf " T[%s->%s] " "${childJobID}_$i" "${parentJobID}_$j"
+				scontrol update JobId=${childJobID}_$i Dependency=afterok:${parentJobID}_$j
+			fi
+		done
+	done
+}
+
+# Export all function for use in calling script.
 export -f printHMS
 export -f scriptFailed
 export -f storeMetrics
 export -f appendList
+export -f splitByChar
+export -f tieTaskDeps

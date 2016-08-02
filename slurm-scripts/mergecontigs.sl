@@ -12,12 +12,12 @@
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
 CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
-OUTPUT=merged/${CONTIG}/merged.bam
+OUTPUT=merged/${CONTIG}.bam
 
 echo "MC: ${CONTIG} -> ${OUTPUT}"
 date
 
-contigMerBlocks=$(find . -type f -iwholename "*/split/${CONTIG}/*.bam" -printf '%h\0%d\0%p\n' | sort -t '\0' -n | awk -F '\0' '{print $3}')
+contigMerBlocks=$(find . -type f -iwholename "*/split/${CONTIG}_*.bam" -printf '%h\0%d\0%p\n' | sort -t '\0' -n | awk -F '\0' '{print $3}')
 if [ "${contigMerBlocks}" == "" ]; then
 	echo "MC: Merge contig ${CONTIG} contains no files!"
 #	scriptFailed "MC"

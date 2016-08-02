@@ -16,7 +16,7 @@ INPUT=${2}
 BLOCK=${3}
 
 CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
-OUTPUT=split/${CONTIG}/split_${BLOCK}.bam
+OUTPUT=split/${CONTIG}_${BLOCK}.bam
 
 
 echo "CS: ${INPUT} by contig ${CONTIG} to ${OUTPUT}"

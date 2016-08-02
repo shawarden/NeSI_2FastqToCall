@@ -12,9 +12,9 @@
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
 CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
- INPUT=markdup/${CONTIG}/markdupped.bam
-  BQSR=baserecal/${CONTIG}/baserecal.firstpass
-OUTPUT=printreads/${CONTIG}/printreads.bam
+ INPUT=markdup/${CONTIG}.bam
+  BQSR=baserecal/${CONTIG}.firstpass
+OUTPUT=printreads/${CONTIG}.bam
 
 echo "PR: ${INPUT} + ${BQSR} -> ${OUTPUT}"
 date

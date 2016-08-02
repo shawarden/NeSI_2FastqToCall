@@ -13,6 +13,7 @@ source /projects/uoo00032/Resources/bin/baserefs.sh
 
  INPUT=${1}
 OUTPUT=${2}
+IDN=$(echo $SLURM_JOB_NAME | cut -d'_' -f2)
 
 echo "CV: ${INPUT} -> ${OUTPUT}"
 date
@@ -53,5 +54,9 @@ fi
 rm ${INPUT}
 
 touch ${OUTPUT}.done
+
+# Start transfers for variants file and index.
+sbatch -J TV_${IDN} ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}
+sbatch -J TVI_${IDN} ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}.tbi
 
 storeMetrics

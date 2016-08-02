@@ -12,8 +12,8 @@
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
 CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
- INPUT=merged/${CONTIG}/merged.bam
-OUTPUT=markdup/${CONTIG}/markdupped.bam
+ INPUT=merged/${CONTIG}.bam
+OUTPUT=markdup/${CONTIG}.bam
 
 echo "MD: ${INPUT} -> ${OUTPUT}"
 date

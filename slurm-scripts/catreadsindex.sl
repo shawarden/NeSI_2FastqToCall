@@ -13,6 +13,7 @@ source /projects/uoo00032/Resources/bin/baserefs.sh
 
 INPUT="${1}"
 OUTPUT="${2}"
+IDN=$(echo $SLURM_JOB_NAME | cut -d'_' -f2)
 
 if [ "$OUTPUT" == "" ]; then
 	echo "RI: No output defined. Usuing input."
@@ -44,6 +45,8 @@ if [ $passed -ne 0 ]; then
 fi
 
 touch ${OUTPUT}.done
+
+sbatch -J TRI_${IDN} ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}
 
 storeMetrics
 

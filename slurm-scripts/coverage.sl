@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --account uoo00032
-#SBATCH --time=00:05:00
+#SBATCH --time=00:10:00
 #SBATCH --mem-per-cpu=128
 #SBATCH --cpus-per-task=1
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
@@ -12,12 +12,11 @@
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
 IDN=${1}
-READGROUP=${2}
-PLATFORM=${3}
+PLATFORM=${2}
 OUTPUT=coverage.sh
 
-echo "#This file contains gender definitions for this individual." | tee ${OUTPUT}
-echo "#GD: ${READGROUP} ${PLATFORM}" | tee -a ${OUTPUT}
+echo "#This file contains gender definitions for individual ${IDN}." | tee ${OUTPUT}
+echo "#GD: ${PLATFORM}" | tee -a ${OUTPUT}
 echo "" | tee -a ${OUTPUT}
 
 source ${PLATFORMS}/${PLATFORM}.sh
@@ -32,7 +31,7 @@ ren='^[0-9]+$'
 printf "#%-10s %8s %s\n" "Chromosome" "Coverage" "Count" | tee -a ${OUTPUT}
 
 for contig in ${CONTIGS}; do
-	INPUT=depth/${contig}/${IDN}.sample_summary
+	INPUT=depth/${contig}.sample_summary
 	if [ ! -e ${INPUT} ]; then
 		# Oh crappola!
 		echo "#${contig} file ${INPUT} doesn't exist!" | tee -a ${OUTPUT}
@@ -64,8 +63,8 @@ xCount=$(echo "scale=3; ($xCoverage/$aCoverage)/$XRat" | bc | sed 's/^\./0./')
 yCount=$(echo "scale=3; ($yCoverage/$aCoverage)/$YRat" | bc | sed 's/^\./0./')
 
 printf "%-20s %6s\n" "#Autosomal coverage:" ${aCoverage} | tee -a ${OUTPUT}
-printf "%-20s %6s\n" "#X coverage:" ${xCoverage} | tee -a ${OUTPUT}
-printf "%-20s %6s\n" "#y coverage:" ${yCoverage} | tee -a ${OUTPUT}
+printf "%-20s %6s\n" "#True-X coverage:" ${xCoverage} | tee -a ${OUTPUT}
+printf "%-20s %6s\n" "#True-y coverage:" ${yCoverage} | tee -a ${OUTPUT}
 printf "%-20s %6s\n" "#X:A ratio:" ${xaRatio} | tee -a ${OUTPUT}
 printf "%-20s %6s\n" "#Y:A ratio:" ${yaRatio} | tee -a ${OUTPUT}
 printf "%-20s %6s\n" "#Fractional X:" ${xCount} | tee -a ${OUTPUT}
@@ -171,5 +170,7 @@ echo "X_CHROMOSOMES=$xChromes" | tee -a ${OUTPUT}
 echo "Y_CHROMOSOMES=$yChromes" | tee -a ${OUTPUT}
 
 touch ${OUTPUT}.done
+
+sbatch -J TGD_${IDN} ${SLSBIN}/transfer.sl ${IDN} coverage.sh ${IDN}.coverage.sh
 
 storeMetrics

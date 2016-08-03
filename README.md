@@ -19,6 +19,25 @@
 
 # Update history
 
+## 2016-08-03
+
+### Fixed
+- DepthOfCoverage and HaplotypeCaller input and output incorrectly defined.
+- DepthOfCoverage no being passed the capture platform correctly.
+- Array element linker throwing errors when previous array is empty which occurs when all previous array was alread completed. Gotta quote those possibly empty inputs!
+- HaplotypeCaller seeking incorrect input for non-arrayed Sex chromosome jobs
+
+### Changed
+- Array element linker can accept non numerical values to compare. Never know if/when that'll come in handy.
+
+### Added
+- Late stage sample fingerprinting sequence. (haplotypecaller -> selectvariants)
+
+### Removed
+- Readgroup variable from coverage mapping. Doesn't do anything.
+- HaplotypeCaller array (autosomal and centromere contigs) to DepthOfCoverage array output and delayed start-time as no dependency tying required.
+
+
 ## 2016-08-02
 
 ### Changed
@@ -40,6 +59,7 @@
 - MergeContig not collecting ContigSplit array dependencies.
 - MergeContig trying to write to wrong location.
 
+
 ## 2016-08-01
 
 ### Changed
@@ -53,6 +73,7 @@
 - Delay on each contig for markdup to haplotype segment as job submission rate exceeded limits.
 - Skip message for X, Y and MT contigs in primary calling loop.
 
+
 ## 2016-07-29
 
 ### Changed
@@ -64,15 +85,18 @@
 ### Merged
 - CatReads and CatReadsIndex jobs into 1. Increase walltime to accomodate both jobs. ~30m cat, 45m index.
 
+
 ## 2016-7-28
 
 ### Added
 - Contig Count to baserefs.sh
 
+
 ## 2016-7-27
 
 ### Fixed
 - ASP seeing a failed grep as a failed ssh connection. grep failure is ExitCode 1, ssh network failure exitcode is > 1
+
 
 ## 2016-07-25
 
@@ -80,11 +104,13 @@
 - Check for job submission failures. Pipeline will exit 1 in that event.
 - Local spooler lauching sequencial jobs without input.
 
+
 ## 2016-07-22:
 
 ### Fixed
 - X sub contigs not being linked correctly in their folders .../X/X:1-2699520.g.vxf.gz, etc.
 - MT contig being included in HaplotypeCaller after removing input collection from primary loop.
+
 
 ## 2016-07-21:
 
@@ -104,6 +130,7 @@
 - Reads file size to job name to size-vs-speed filtering.
 - Automatic sample progression. (ASP)
 
+
 ## 2016-07-20:
 
 ### Added
@@ -116,6 +143,7 @@
 - HaplotypeCaller cpu-per-task & mem-per-cpu from 2x32 to 4x8 to boost parallelization but reduce overall memory requirement as this extra memory no longer affects run-time.
 - SortSam mem-per-cpu from 32G to 16G as this has no effect on runtime.
 
+
 ## 2016-07-19:
 
 ### Created
@@ -124,10 +152,12 @@
 ### Added
 - Global temp directory definition to minimise network thrashing.
 
+
 ## 2016-07-18:
 
 ### Changed
 - HaplotypeCaller cpu-per-task from 1 to 2 to test if -nct parallelization has been resolved in this version of GATK.
+
 
 ## 2016-07-15:
 
@@ -137,50 +167,60 @@
 ### Changed
 - HaplotypeCaller mem-per-cpu from 16G to 32G to test if extra memory decreases run-time
 
+
 ## 2016-07-14:
 
 ### Added
 - parallelization option to HaplotypeCaller function as this has been resolved in GATK and it will reduce runtime.
+
 
 ## 2016-07-12:
 
 ### Added
 - duplicate metrics storage for sample.
 
+
 ## 2016-07-11:
 
 ### Added
 - global module version definitions.
+
 
 ## 2016-07-07:
 
 ### Added
 - check for previously finished jobs.
 
+
 ## 2016-07-05:
 
 ### Added
 - SLURM based memory calculation to java arguments.
+
 
 ## 2016-07-01:
 
 ### Added
 - FASTQ scan definitions.
 
+
 ## 2016-06-28:
 
 ### Added
 - contig definition to for automation.
+
 
 ## 2016-06-13:
 
 ### Added
 - base reference file to reduce data replication across multiple scripts.
 
+
 ## 2016-06-08:
 
 ### Removed
 - trimming process as BWA & GATK tools can handle quality based trimming and adapters.
+
 
 ## 2016-06-02:
 

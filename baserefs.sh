@@ -18,6 +18,7 @@ export       BUNDLE=${RESOURCES}/broad_bundle_b37_v2.5
 export        DBSNP=${BUNDLE}/dbsnp_141.GRCh37.vcf
 export        MILLS=${BUNDLE}/Mills_and_1000G_gold_standard.indels.b37.vcf
 export       INDELS=${BUNDLE}/1000G_phase1.indels.b37.vcf
+export       COMMON=${RESOURCES}/Hapmap3_3commonvariants.vcf
 export          REF=${BUNDLE}/human_g1k_v37
 export         REFA=${REF}.fasta
 export         REFD=${REF}.dict
@@ -71,65 +72,6 @@ export FASTQ_MAXDIFF=2			# Maximum index variation before new index is created.
 export JAVA_MEM_GB=$((($SLURM_MEM_PER_CPU * $SLURM_JOB_CPUS_PER_NODE)/1024))
 export   JAVA_ARGS="-Xmx${JAVA_MEM_GB}g -Djava.io.tmpdir=${JOB_TEMP_DIR}"
 export MAX_RECORDS=$((${JAVA_MEM_GB} * 200000)) #~100bp picard records in memory.
-
-######################
-# SBATCH definitions #
-######################
-declare -A SB
-
-# SB[W,*]: sbatch max wall time in minutes. Keep this at least 1.25x highest run-time.
-# SB[C,*]: sbatch cores per task
-# SB[M,*]: sbatch memory per task in megabytes
-
-SB[ACCOUNT]=uoo00032
-SB[MAIL,USER]=sam.hawarden@otago.ac.nz
-SB[MAIL,TYPE]=FAIL
-
-SB[W,READSPLIT]=300
-SB[C,READSPLIT]=8
-SB[M,READSPLIT]=16384
-
-SB[W,ALIGN]=120
-SB[C,ALIGN]=6
-SB[M,ALIGN]=16384
-
-SB[W,SORTSAM]=60
-SB[C,SORTSAM]=4
-SB[M,SORTSAM]=16384
-
-SB[W,CONTIGSPLIT]=60
-SB[C,CONTIGSPLIT]=2
-SB[M,CONTIGSPLIT]=4096
-
-SB[W,MERGECONTIG]=90
-SB[C,MERGECONTIG]=4
-SB[M,MERGECONTIG]=16384
-
-SB[W,MARKDUP]=120
-SB[C,MARKDUP]=2
-SB[M,MARKDUP]=16384
-
-SB[W,BASERECAL]=120
-SB[C,BASERECAL]=4
-SB[M,BASERECAL]=16384
-
-SB[W,PRINT]=180
-SB[C,PRINT]=4
-SB[M,PRINT]=16384
-
-SB[W,HAPLO]=180
-SB[C,HAPLO]=8
-SB[M,HAPLO]=32768
-
-# Contig Wall time multipliers. Do we really need 84 of these? up. Move to another file!
-SB[CWM,1]=1
-SB[CWM,2]=1
-SB[CWM,3]=1
-SB[CWM,4]=1
-SB[CWM,5]=1
-SB[CWM,6]=1
-
-SB_ARGS="--account ${SB[ACCOUNT]} --mail-user=${SB[MAIL,USER]}"
 
 export OPENBLAS_MAIN_FREE=1
 
@@ -213,7 +155,12 @@ function splitByChar {
 	input=${1}
 	char=${2}
 	
-	echo -ne "${input}" | sed -e "s/${char}/ /g"
+	if [ "$char" != "" ]; then
+		echo -ne "$input" | sed -e "s/${char}/ /g"
+	else
+		echo -ne "FAIL"
+		(>&2 echo -ne "FAILURE:\t splitByChar [${1}] [${2}]\n\tNo character to replace. You forget to quote your input?\n")
+	fi
 }
 
 ######################
@@ -226,15 +173,21 @@ function tieTaskDeps {
 	parentArray=${3}
 	parentJobID=${4}
 	
-	# Assign each element in markdup array to matching element in mergecontig array
-	for i in $(splitByChar $childArray ","); do
-		for j in $(splitByChar $parentArray ","); do
-			if [ $i -eq $j ]; then
-#				printf " T[%s->%s] " "${childJobID}_$i" "${parentJobID}_$j"
-				scontrol update JobId=${childJobID}_$i Dependency=afterok:${parentJobID}_$j
-			fi
+	if [ "$childArray" != "" ] && [ "$parentArray" != "" ]; then
+		# Both arrays contain something.
+		
+		# Cycle through child array for elements
+		for i in $(splitByChar "$childArray" ","); do
+			# Cycle through parent array for matching elements.
+			for j in $(splitByChar "$parentArray" ","); do
+				if [ "$i" == "$j" ]; then
+					# Match found.
+#					printf " T[%s->%s] " "${childJobID}_$i" "${parentJobID}_$j"
+					scontrol update JobId=${childJobID}_$i Dependency=afterok:${parentJobID}_$j
+				fi
+			done
 		done
-	done
+	fi
 }
 
 # Export all function for use in calling script.

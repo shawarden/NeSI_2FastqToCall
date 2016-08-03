@@ -280,12 +280,10 @@ function spoolMerge {
 		printf "done "
 	fi
 	
-	printf "[%02d] " $mergeReadCount
-	
 	printf "%s " "-> Depth"
 	
 	if [ "$depthArray" != "" ]; then
-		DEP_DC=$(sbatch -J DC_${IDN} -a $depthArray --begin=now+1hour ${SLSBIN}/depthofcoverage.sl | awk '{print $4}')
+		DEP_DC=$(sbatch -J DC_${IDN} -a $depthArray --begin=now+1hour ${SLSBIN}/depthofcoverage.sl ${PLATFORM} | awk '{print $4}')
 		if [ $? -ne 0 ] || [ "$DEP_DC" == "" ]; then
 			printf "FAILED!\n"
 			exit 1
@@ -300,51 +298,48 @@ function spoolMerge {
 		printf "done "
 	fi
 	
-	printf "%s " "-> Haplo"
+	printf "%s " "-> Coverage"
 	
-	if [ "$contig" != "X" ] && [ "$contig" != "Y" ] && [ "$contig" != "MT" ]; then
-		# Isn't gender or mitochondrial contig.
-		# Is autosomal or GL*
+	if [ ! -e coverage.sh.done ]; then
+		DEP_GD=$(sbatch -J GD_${IDN} $(depCheck ${DEP_DC}) ${SLSBIN}/coverage.sl ${IDN} ${PLATFORM} | awk '{print $4}')
+		if [ $? -ne 0 ] || [ "$DEP_GD" == "" ]; then
+			printf "FAILED!\n"
+			exit 1
+		else
+			printf "$s " "${DEP_GD}"
+		fi
+	else
+		printf "done -> Save Coverage "
 		
-		if [ "$haploArray" != "" ]; then
-			DEP_HC=$(sbatch -J HC_${IDN} -a $haploArray --begin=now+1hour ${SLSBIN}/haplotypecaller.sl ${printReadOutput} ${contig} ${haplotypeOutput} | awk '{print $4}')
-			if [ $? -ne 0 ] || [ "$DEP_HC" == "" ]; then
+		# Check if coverage map has been uploaded!
+		if [ ! -e ${IDN}.coverage.sh.transfer.done ]; then
+			DEP_TGD=$(sbatch -J TGD_${IDN} $(depCheck ${DEP_GD}) ${SLSBIN}/transfer.sl ${IDN} coverage.sh ${IDN}.coverage.sh | awk '{print $4}')
+			if [ $? -ne 0 ] || [ "$DEP_TGD" == "" ]; then
 				printf "FAILED!\n"
 				exit 1
 			else
-				printf "%s [%02d] " "$DEP_HC" $(splitByChar "$haploArray" "," | wc -w)
+				printf "$s " "${DEP_TGD}"
 			fi
-			
-			# Tie each task to the matching task in the previous array.
-			tieTaskDeps "$haploArray" "$DEP_HC" "$depthArray" "$DEP_DC"
-			scontrol update JobId=${DEP_HC} StartTime=now+0
 		else
 			printf "done "
 		fi
 	fi
 	
-	exit 0
+	printf "%s " "-> Haplo"
 	
-	CatVarDeps=$(appendList "$CatVarDeps" "${DEP_HC}")
-	
-	printf "\n"
-	
-	if [ ! -e coverage.sh.done ]; then
-		DEP_GENDER=$(sbatch -J CGD_${IDN} $(depCheck ${DEP_DC}) ${SLSBIN}/coverage.sl ${IDN} ${READGROUP} ${PLATFORM} | awk '{print $4}')
-		if [ $? -ne 0 ] || [ "$DEP_GENDER" == "" ]; then
-			echo "CB: Gender Determination FAILED!"
+	if [ "$haploArray" != "" ]; then
+		DEP_HC=$(sbatch -J HC_${IDN} -a $haploArray ${SLSBIN}/haplotypecaller.sl | awk '{print $4}')
+		if [ $? -ne 0 ] || [ "$DEP_HC" == "" ]; then
+			printf "FAILED!\n"
 			exit 1
 		else
-			echo "CB: Gender Determination ${DEP_GENDER} deps [${genderDeps}]"
+			printf "%s [%02d] " "$DEP_HC" $(splitByChar "$haploArray" "," | wc -w)
 		fi
 	else
-		echo "CB: Gender Determination done"
+		printf "done "
 	fi
 	
-	if [ ! -e ${IDN}.coverage.sh.transfer.done ]; then
-		DEP_SGENDER=$(sbatch -J TCDG_${IDN} $(depCheck ${DEP_GENDER}) ${SLSBIN}/transfer.sl ${IDN} coverage.sh ${IDN}.coverage.sh | awk '{print $4}')
-	fi
-	echo "CB: Save Coverage map and Gender Determination: $(depDone ${DEP_SGENDER}). Depends on \"${DEP_GENDER}\""
+	CatVarDeps=$(appendList "$CatVarDeps" "${DEP_HC}")
 	
 	haploXInput=printreads/X.bam
 	haploYInput=printreads/Y.bam
@@ -358,64 +353,61 @@ function spoolMerge {
 	mkdir -p $(dirname ${haploXPar2Output}) 
 	mkdir -p $(dirname ${haploYOutput})
 	
+	printf "%s " "-> Gender-Haplo"
+	
 	if [ ! -e ${haploXPar1Output}.done ]; then
-		DEP_HCXPAR1=$(sbatch -J HC_${IDN}_${XPAR1} $(depCheck ${DEP_GENDER}) ${SLSBIN}/haplotypecaller.sl  ${haploXInput} "${XPAR1}" ${haploXPar1Output} | awk '{print $4}')
+		DEP_HCXPAR1=$(sbatch -J HC_${IDN}_${XPAR1} $(depCheck ${DEP_GD}) ${SLSBIN}/haplotypecaller.sl  "${XPAR1}" | awk '{print $4}')
 		if [ $? -ne 0 ] || [ "$DEP_HCXPAR1" == "" ]; then
-			echo "CB: HaplotypeCaller for ${XPAR1} FAILED!"
+			printf "%s FAILED!\n" "$XPAR1"
 			exit 1
 		else
-			echo "CB: HaplotypeCaller for ${XPAR1} ${DEP_HCXPAR1} depends on ${DEP_GENDER}"
+			printf "%s %s " "$XPAR1" "$DEP_HCXPAR1"
 		fi
 	else
-		echo "CB: HaplotypeCaller for ${XPAR1} done"
+		printf "%s done " "$XPAR1"
 	fi
 	
 	if [ ! -e ${haploTRUEXOutput}.done ]; then
-		DEP_HCTRUEX=$(sbatch -J HC_${IDN}_${TRUEX} $(depCheck ${DEP_GENDER}) ${SLSBIN}/haplotypecaller.sl  ${haploXInput} "${TRUEX}" ${haploTRUEXOutput} | awk '{print $4}')
+		DEP_HCTRUEX=$(sbatch -J HC_${IDN}_${TRUEX} $(depCheck ${DEP_GD}) ${SLSBIN}/haplotypecaller.sl "${TRUEX}" | awk '{print $4}')
 		if [ $? -ne 0 ] || [ "$DEP_HCTRUEX" == "" ]; then
-			echo "CB: HaplotypeCaller for ${TRUEX} FAILED!"
+			printf "%s FAILED!\n" "$TRUEX"
 			exit 1
 		else
-			echo "CB: HaplotypeCaller for ${TRUEX} ${DEP_HCTRUEX} depends on ${DEP_GENDER}"
+			printf "%s %s " "$TRUEX" "$DEP_HCTRUEX"
 		fi
 	else
-		echo "CB: HaplotypeCaller for ${TRUEX} done"
+		printf "%s done " "$TRUEX"
 	fi
 	
 	if [ ! -e ${haploXPar2Output}.done ]; then
-		DEP_HCXPAR2=$(sbatch -J HC_${IDN}_${XPAR2} $(depCheck ${DEP_GENDER}) ${SLSBIN}/haplotypecaller.sl  ${haploXInput} "${XPAR2}" ${haploXPar2Output} | awk '{print $4}')
+		DEP_HCXPAR2=$(sbatch -J HC_${IDN}_${XPAR2} $(depCheck ${DEP_GD}) ${SLSBIN}/haplotypecaller.sl "${XPAR2}" | awk '{print $4}')
 		if [ $? -ne 0 ] || [ "$DEP_HCXPAR2" == "" ]; then
-			echo "CB: HaplotypeCaller for ${XPAR2} FAILED!"
+			printf "%s FAILED!\n" "$XPAR2"
 			exit 1
 		else
-			echo "CB: HaplotypeCaller for ${XPAR2} ${DEP_HCXPAR2} depends on ${DEP_GENDER}"
+			printf "%s %s " "$XPAR2" "$DEP_HCXPAR2"
 		fi
 	else
-		echo "CB: HaplotypeCaller for ${XPAR2} done"
+		printf "%s done " "$XPAR2"
 	fi
 	
 	if [ ! -e ${haploYOutput}.done ]; then
-		DEP_HCY=$(sbatch -J HC_${IDN}_Y $(depCheck ${DEP_GENDER}) ${SLSBIN}/haplotypecaller.sl  ${haploYInput} "Y" ${haploYOutput} | awk '{print $4}')
+		DEP_HCY=$(sbatch -J HC_${IDN}_Y $(depCheck ${DEP_GD}) ${SLSBIN}/haplotypecaller.sl "Y" | awk '{print $4}')
 		if [ $? -ne 0 ] || [ "$DEP_HCY" == "" ]; then
-			echo "CB: HaplotypeCaller for Y FAILED!"
+			printf "Y FAILED!\n"
 			exit 1
 		else
-			echo "CB: HaplotypeCaller for Y ${DEP_HCY} depends on ${DEP_GENDER}"
+			printf "Y %s " "$DEP_HCY"
 		fi
 	else
-		echo "CB: HaplotypeCaller for Y done"
+		printf "Y done"
 	fi
 	
 	# If something went wrong we want to pick up where we left off without stray : characters.
 	CatVarDeps="${DEP_HC} ${DEP_HCXPAR1} ${DEP_HCTRUEX} ${DEP_HCXPAR2} ${DEP_HCY}"
 	CarVarDeps2=""
 	for dep in ${CatVarDeps}; do
-		if [ "$CarVarDeps2" == "" ]; then
-			# Initial entry.
-			CarVarDeps2=${dep}
-		else
-			CarVarDeps2="${CarVarDeps2}:${dep}"
-		fi
+		CarVarDeps2=$(appendList "$CarVarDeps2" "${dep}" ":")
 	done
 	CatVarDeps="${CarVarDeps2}"
 	
@@ -429,35 +421,33 @@ function spoolMerge {
 			thisInput="haplo/${contig}.g.vcf.gz"
 		fi
 		
-		if [ "$CatVarInputs" == "" ]; then
-			CatVarInputs="${thisInput}"
-		else
-			CatVarInputs="${CatVarInputs} ${thisInput}"
-		fi
+		CatVarInputs=$(appendList "${CatVarInputs}" "${thisInput}")
 	done
 	
 	mergePrintOutput=${IDN}.bam
 	catvarOutput=${IDN}.g.vcf.gz
 	
+	printf "\nSM: CatReads "
+	
 	# Merge print-read bams.
 	if [ ! -e ${mergePrintOutput}.done ]; then
-		DEP_CPR=$(sbatch -J CR_${IDN} $(depCheck ${DEP_PR}) ${SLSBIN}/catreads.sl "${catInputs}" ${mergePrintOutput} | awk '{print $4}')
-		if [ $? -ne 0 ] || [ "$DEP_CPR" == "" ]; then
+		DEP_CR=$(sbatch -J CR_${IDN} $(depCheck ${DEP_PR}) ${SLSBIN}/catreads.sl "${catInputs}" ${mergePrintOutput} | awk '{print $4}')
+		if [ $? -ne 0 ] || [ "$DEP_CR" == "" ]; then
 			printf "FAILED!\n"
 			exit 1
 		else
-			printf "$d " ${DEP_CPR}
+			printf "$d " ${DEP_CR}
 		fi
 	else
 		printf "done %s " "-> Save Reads"
 		
 		if [ ! -e ${mergePrintOutput}.transfer.done ]; then
-			DEP_TCPR=$(sbatch -J TR_${IDN} $(depCheck ${DEP_CPR}) ${SLSBIN}/transfer.sl ${IDN} ${mergePrintOutput} | awk '{print $4}')
-			if [ $? -ne 0 ] || [ "$DEP_TCPR" == "" ]; then
+			DEP_TCR=$(sbatch -J TR_${IDN} $(depCheck ${DEP_CR}) ${SLSBIN}/transfer.sl ${IDN} ${mergePrintOutput} | awk '{print $4}')
+			if [ $? -ne 0 ] || [ "$DEP_TCR" == "" ]; then
 				printf "FAILED!\n"
 				exit 1
 			else
-				printf "$d " ${DEP_TCPR}
+				printf "$d " ${DEP_TCR}
 			fi
 		else
 			printf "done "
@@ -466,31 +456,45 @@ function spoolMerge {
 		printf "%s " "-> Reads Index"
 		
 		if [ ! -e ${mergePrintOutput%.bam}.bai.done ]; then
-			DEP_CPRI=$(sbatch -J RI_${IDN} $(depCheck ${DEP_CPR}) ${SLSBIN}/catreadsindex.sl ${mergePrintOutput} ${mergePrintOutput%.bam}.bai | awk '{print $4}')
-			if [ $? -ne 0 ] || [ "$DEP_CPRI" == "" ]; then
+			DEP_RI=$(sbatch -J RI_${IDN} $(depCheck ${DEP_CR}) ${SLSBIN}/catreadsindex.sl ${mergePrintOutput} ${mergePrintOutput%.bam}.bai | awk '{print $4}')
+			if [ $? -ne 0 ] || [ "$DEP_RI" == "" ]; then
 				printf "FAILED!\n"
 				exit 1
 			else
-				printf "$d " ${DEP_CPRI}
+				printf "$d " ${DEP_RI}
 			fi
 		else
 			printf "done %s " "-> Save Reads Index"
 			
 			if [ ! -e ${mergePrintOutput%.bam}.bai.transfer.done ]; then
-				DEP_TMRI=$(sbatch -J TRI_${IDN} $(depCheck ${DEP_CPRI}) ${SLSBIN}/transfer.sl ${IDN} ${mergePrintOutput%.bam}.bai | awk '{print $4}')
-				if [ $? -ne 0 ] || [ "$DEP_TMRI" == "" ]; then
+				DEP_TRI=$(sbatch -J TRI_${IDN} $(depCheck ${DEP_RI}) ${SLSBIN}/transfer.sl ${IDN} ${mergePrintOutput%.bam}.bai | awk '{print $4}')
+				if [ $? -ne 0 ] || [ "$DEP_TRI" == "" ]; then
 					printf "FAILED!\n"
 					exit 1
 				else
-					printf "%d " ${DEP_TMRI}
+					printf "%d " ${DEP_TRI}
 				fi
 			else
-				printf "done\n"
+				printf "done "
 			fi
 		fi
 	fi
 	
-	printf "CB: Cat Variants "
+#	printf "\nSM: Fingerprint "
+#	
+#	if [ ! -e ${IDN}.fingerprint.vcf.gz.done ]; then
+#		DEP_FP=$(sbatch -J FP_${IDN} $(depCheck ${DEP_CR}) ${SLSBIN}/fingerprint.sl ${IDN} ${mergePrintOutput} ${IDN}.fingerprint.vcf.gz | awk '{print $4}')
+#		if [ $? -ne 0 ] || [ "$DEP_FP" == "" ]; then
+#			printf "%s FAILED!\n" "$DEP_FP"
+#			exit 1
+#		else
+#			printf "%s " "$DEP_FP"
+#		fi
+#	else
+#		printf "done "
+#	fi
+	
+	printf "\nSM: CatVariants "
 	
 	if [ ! -e ${catvarOutput}.done ]; then
 		DEP_CV=$(sbatch -J CV_${IDN} $(depCheck ${CatVarDeps}) ${SLSBIN}/catvar.sl "${CatVarInputs}" ${catvarOutput} | awk '{print $4}')
@@ -498,18 +502,18 @@ function spoolMerge {
 			printf "FAILED!\n"
 			exit 1
 		else
-			printf "%d\n" ${DEP_CV}
+			printf "%d" ${DEP_CV}
 		fi
 	else
 		printf "done %s " "-> Save Cat Variants" 
 		
 		if [ ! -e ${catvarOutput}.transfer.done ]; then
-			DEP_TVF=$(sbatch -J TV_${IDN} $(depCheck ${DEP_CV}) ${SLSBIN}/transfer.sl ${IDN} ${catvarOutput} | awk '{print $4}')
-			if [ $? -ne 0 ] || [ "$DEP_TVF" == "" ]; then
+			DEP_TV=$(sbatch -J TV_${IDN} $(depCheck ${DEP_CV}) ${SLSBIN}/transfer.sl ${IDN} ${catvarOutput} | awk '{print $4}')
+			if [ $? -ne 0 ] || [ "$DEP_TV" == "" ]; then
 				printf "FAILED!\n"
 				exit 1
 			else
-				printf "%d " ${DEP_TVF}
+				printf "%d " ${DEP_TV}
 			fi
 		else
 			printf "done "
@@ -518,7 +522,7 @@ function spoolMerge {
 		printf "& Save Variants Index "
 		
 		if [ ! -e ${catvarOutput}.tbi.transfer.done ]; then
-			DEP_TVI=$(sbatch -J TCVI_${IDN} $(depCheck ${DEP_CV}) ${SLSBIN}/transfer.sl ${IDN} ${catvarOutput}.tbi | awk '{print $4}')
+			DEP_TVI=$(sbatch -J TVI_${IDN} $(depCheck ${DEP_CV}) ${SLSBIN}/transfer.sl ${IDN} ${catvarOutput}.tbi | awk '{print $4}')
 			if [ $? -ne 0 ] || [ "$DEP_TVI" == "" ]; then
 				printf "FAILED!\n"
 				exit 1
@@ -526,18 +530,20 @@ function spoolMerge {
 				printf "%d " ${DEP_TVI}
 			fi
 		else
-			printf "done\n"
+			printf "done"
 		fi
 		
 	fi
 	
-	if [ "$DEP_CV" != "" ] && [ "$DEP_RI" != "" ]; then
-		saveDeps="${DEP_CV}:${DEP_RI}"
-	elif [ "$DEP_RI" != "" ]; then
-		saveDeps="${DEP_RI}"
+	if [ "$DEP_CV" != "" ] && [ "$DEP_CR" != "" ]; then
+		saveDeps="${DEP_CV}:${DEP_CR}"
+	elif [ "$DEP_CR" != "" ]; then
+		saveDeps="${DEP_CR}"
 	elif [ "$DEP_CV" != "" ]; then
 		saveDeps="${DEP_CV}"
 	fi
+	
+	printf "SM: Save metrics "
 	
 	if [ ! -e ${IDN}.metrics.txt.transfer.done ]; then
 		DEP_TMet=$(sbatch -J TMet_${IDN} $(depCheck ${saveDeps}) ${SLSBIN}/transfer.sl ${IDN} metrics.txt ${IDN}.metrics.txt | awk '{print $4}')
@@ -551,19 +557,21 @@ function spoolMerge {
 		printf "done "
 	fi
 	
-	printf "%s " "-> Save commands "
+	printf "& Save commands "
 	
 	if [ ! -e ${IDN}.commands.txt.transfer.done ]; then
 		DEP_TCMD=$(sbatch -J TCMD_${IDN} $(depCheck ${saveDeps}) ${SLSBIN}/transfer.sl ${IDN} commands.txt ${IDN}.commands.txt | awk '{print $4}')
 		if [ $? -ne 0 ] || [ "$DEP_TCMD" == "" ]; then
-			printf "FAILED!\n"
+			printf "FAILED!"
 			exit 1
 		else
-			printf "%d\n" ${DEP_TCMD}
+			printf "%d" ${DEP_TCMD}
 		fi
 	else
-		printf "done\n"
+		printf "done "
 	fi
+	
+	printf "\n"
 }
 
 if [ "$READNUM" == "R1" ]; then	# BLOCK Read1 has completed!

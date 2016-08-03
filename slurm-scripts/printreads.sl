@@ -6,8 +6,8 @@
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
 #SBATCH --mail-type=FAIL
 #SBATCH --constraint=avx
-#SBATCH --error=slurm/PR_%j.out
-#SBATCH --output=slurm/PR_%j.out
+#SBATCH --error=slurm/PR_%A_%a.out
+#SBATCH --output=slurm/PR_%A_%a.out
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 

@@ -6,22 +6,21 @@
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
 #SBATCH --mail-type=FAIL
 #SBATCH --constraint=avx
-#SBATCH --error=slurm/HC_%j.out
-#SBATCH --output=slurm/HC_%j.out
+#SBATCH --error=slurm/HC_%A_%a.out
+#SBATCH --output=slurm/HC_%A_%a.out
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
-IDN=${1}
-CONTIG=${2}
+CONTIG=${1}
 
 if [ "${CONTIG}" == "" ]; then	# Contig not defined. X & Y subtypes.
 	CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
 fi
 
- INPUT=printreads/${CONTIG}/printreads.bam
-OUTPUT=haplo/${CONTIG}/${IDN}.g.vcf.gz
+ INPUT=printreads/${CONTIG%:*}.bam	# Strip contig coordinates.
+OUTPUT=haplo/${CONTIG}.g.vcf.gz
 
-echo "HC: Command-line: ${0} ${@}"
+echo "HC: ${@}"
 
 if [ -e coverage.sh ]; then
 	# Gender file exists so obtain values from it.

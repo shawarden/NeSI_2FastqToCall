@@ -19,7 +19,7 @@ echo "TF: IDN:${IDN} + INPUT:${INPUT} -> OUTPUT:${OUTPUT}"
 if [ "${INPUT}" == "" ] || [ ! -e ${INPUT} ]
 then
 	echo "TF: \"${INPUT}\" doesn't exist!"
-	scriptFailed "TF"
+#	scriptFailed "TF"
 	exit 1
 fi
 
@@ -57,10 +57,10 @@ date
 
 if [ $passed -ne 0 ]; then
 	echo "TF: ${OUTPUT} failed!"
-	scriptFailed "TF"
+#	scriptFailed "TF"
 	exit 1
 fi
 
 touch ${LABEL}.transfer.done
 
-storeMetrics
+#storeMetrics	# Unless we're going to wait around for this, why do we need the metrics?

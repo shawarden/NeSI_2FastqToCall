@@ -19,6 +19,22 @@
 
 # Update history
 
+## 2016-08-04
+
+### Changed
+- HaplotypeCaller array elements tied to PrintReads array elements.
+- Migrated file IO validation to baserefs.sh
+- Large output files are first written to local node's tmp space, then moved to output folder on completion.
+- ReadSplit launches as array job.
+
+### Fixed
+- BaseRecalibrator array job using singleton out and err file definitions.
+- Job output not printing job/array ids correctly.
+
+### Added
+- File exist checking to each sbatch script with detailed output.
+- Clean up sorted block output when all contig splitting has completed after any mergecontig runs
+
 ## 2016-08-03
 
 ### Fixed
@@ -229,16 +245,13 @@
 
 # To do
 
-## Cleanup
-- Add process to clean up sorted block output when all contig splitting has completed. Could contigsplit be used to check if all other contig splits are finished and clean up by itself? Would like to tarball the rest of the folder structure to logging sake.
+## Full Array
+- Convert alignment and sorting into array jobs. This can be done by creating the jobs at the beginning but setting them to delayed start or to be dependent on the ReadSplit completing. Then tie up dependencies and release block when that alignment can start. Once ReadSplit is finished, purge the remaining alignemnt and sort array elements. If further array elements are set to specific dependencies then the purged jobs wont affect anything.
 
 ## Bulk
 - Investigate job arrays to better manage bulk job sumission. NeSI queue length is ~5000 jobs. Each array job can contain 1000 sub jobs.
 - Can array jobs have unique dependencies?
 - Can you add jobs to an existing array?
-
-## Missing input
-- Find out why MarkDuplicates sometimes fails to find input. The dependencies are transmitted but the output doesn't exist when MD starts.
 
 ## Minimal
 - Continue to work out minimum requirement to obtain 1 hour max runtimme per segment within high partition.

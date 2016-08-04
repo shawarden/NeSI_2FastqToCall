@@ -14,17 +14,17 @@ source /projects/uoo00032/Resources/bin/baserefs.sh
 PLATFORM=${1}
 CONTIG=$([ "${2}" == "" ] && echo -ne "${CONTIGA[$SLURM_ARRAY_TASK_ID]}" || echo -ne "${2}")	# Input value or specific value.
 
-   INPUT=printreads/${CONTIG}.bam
-  OUTPUT=depth/${CONTIG}
+ INPUT=printreads/${CONTIG}.bam
+OUTPUT=depth/${CONTIG}
 
-echo "DC: ${INPUT} + ${PLATFORM} -> ${OUTPUT}"
+HEADER="DC"
+
+echo "$HEADER: ${INPUT} + ${PLATFORM} -> ${OUTPUT}"
 date
 
-if [ ! -e ${INPUT} ]; then
-	echo "DC: Input file \"${INPUT}\" doesn't exist!"
-#	scriptFailed "DC"
-	exit 1
-fi
+# Make sure input and target folders exists and that output file does not!
+if ! inFile; then exit 1; fi
+if ! outFile; then exit 1; fi
 
 platformBED=${PLATFORMS}/${PLATFORM}.bed
   genderBED=${PLATFORMS}/$([ "$PLATFORM" == "Genomic" ] && echo -ne "AV5" || echo -ne "$PLATFORM" ).bed
@@ -44,7 +44,6 @@ else
 	actualContig=${CONTIG}
 fi
 
-
 GATK_PROC=DepthOfCoverage
 GATK_ARGS="-T ${GATK_PROC} \
 -R ${REFA} \
@@ -56,23 +55,13 @@ GATK_ARGS="-T ${GATK_PROC} \
 --omitIntervalStatistics \
 -nt ${SLURM_JOB_CPUS_PER_NODE}"
 
-
 module load ${MOD_JAVA}
 
 CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar $GATK ${GATK_ARGS} -I ${INPUT} -o ${OUTPUT}"
-echo "DC: ${CMD}" | tee -a commands.txt
+echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 ${CMD}
-passed=$?
-
-echo "DC: ${INPUT} + ${PLATFORM} -> ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS %3600) / 60))m $(($SECONDS % 60))s"
-date
-
-if [ $passed -ne 0 ]; then
-	echo "DC: ${OUTPUT} failed!"
-#	scriptFailed "DC"
-	exit 1
-fi
+if cmdFailed; then exit 1; fi
 
 touch ${OUTPUT}.done
 

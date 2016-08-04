@@ -11,38 +11,30 @@
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
-SAMPLE=${1}
-INPUT=${2}
-BLOCK=${3}
+INPUT=${1}
+BLOCK=${2}
+
+HEADER="CS"
 
 CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
 OUTPUT=split/${CONTIG}_${BLOCK}.bam
 
-
-echo "CS: ${INPUT} by contig ${CONTIG} to ${OUTPUT}"
+echo "$HEADER: ${INPUT} by contig ${CONTIG} to ${OUTPUT}"
 date
 
-if [ ! -e ${INPUT} ]; then
-	echo "CS: Input file \"${INPUT}\" doesn't exist!"
-#	scriptFailed "CS"
-	exit 1
-fi
+# Make sure input and target folders exists and that output file does not!
+if ! inFile; then exit 1; fi
+if ! outDirs; then exit 1; fi
+if ! outFile; then exit 1; fi
 
-CMD="${SAMTOOLS} view -bh -@ 1 ${INPUT} ${CONTIG} > ${OUTPUT}"
-echo "CS: ${CMD}" | tee -a ../commands.txt
+CMD="${SAMTOOLS} view -bh -@ 1 ${INPUT} ${CONTIG} > ${JOB_TEMP_DIR}/${OUTPUT}"
+echo "$HEADER: ${CMD}" | tee -a ../commands.txt
 
 eval ${CMD}
-passed=$?
+if cmdFailed; then exit 1; fi
 
-echo "CS: ${INPUT} to ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
-date
-
-if [ $passed -ne 0 ]
-then
-	echo "CS: ${INPUT} to ${CONTIG} Failed!"
-#	scriptFailed "CS"
-	exit 1
-fi
+# Move output to final location
+if ! finalOut; then exit 1; fi
 
 touch ${OUTPUT}.done
 

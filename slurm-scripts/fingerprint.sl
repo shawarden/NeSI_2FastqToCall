@@ -15,14 +15,15 @@ IDN=${1}
 INPUT=${2}
 OUTPUT=${INPUT%.bam}.vcf.gz
 
-echo "FPH: ${INPUT} -> ${OUTPUT}"
+HEADER="FHC"
+
+echo "$HEADER: ${INPUT} -> ${OUTPUT}"
 date
 
-if [ ! -e ${INPUT} ]; then
-	echo "FPH: Input file \"${INPUT}\" doesn't exist!"
-#	scriptFailed "HC"
-	exit 1
-fi
+# Make sure input and target folders exists and that output file does not!
+if ! inFile; then exit 1; fi
+if ! outDirs; then exit 1; fi
+if ! outFile; then exit 1; fi
 
 GATK_PROC=HaplotypeCaller
 GATK_ARGS="-T ${GATK_PROC} \
@@ -32,20 +33,14 @@ GATK_ARGS="-T ${GATK_PROC} \
 
 module load ${MOD_JAVA}
 
-CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar $GATK ${GATK_ARGS} -I ${INPUT} -o ${OUTPUT}"
-echo "FPH: ${CMD}" | tee -a commands.txt
+CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar $GATK ${GATK_ARGS} -I ${INPUT} -o ${JOB_TEMP_DIR}/${OUTPUT}"
+echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 ${CMD}
-passed=$?
+if cmdFailed; then exit 1; fi
 
-echo "FPH: ${INPUT} -> ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
-date
-
-if [ $passed -ne 0 ]; then
-	echo "FP: ${OUTPUT} failed!"
-#	scriptFailed "HC"
-	exit 1
-fi
+# Move output to final location
+if ! finalOut; then exit 1; fi
 
 touch ${OUTPUT}.done
 

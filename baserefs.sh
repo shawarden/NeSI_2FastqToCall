@@ -6,6 +6,9 @@
 # include: "source /path/to/baserefs.sh" at the top of pretty much every script to import these values.
 ###########
 
+# Nerge exit codes from piped commands so any command that fails carries to $?
+set -o pipefail
+
 # General References.
 export      PROJECT=/projects/uoo00032
 export    RESOURCES=${PROJECT}/Resources
@@ -86,23 +89,24 @@ function printHMS {
 	SECS=${1}
 	printf "%02d:%02d:%02d" "$(($SECS / 3600))" "$((($SECS % 3600) / 60))" "$(($SECS % 60))"
 }
+export -f printHMS
 
 #######################
 # Output basic node information on job failure.
 #######################
 function scriptFailed {
-	HEADER=${1}
 	echo ""
-	echo "${HEADER}: SControl -----"
+	echo "$HEADER: SControl -----"
 	scontrol show job ${SLURM_JOBID}
 	echo ""
-	echo "${HEADER}: Export -----"
+	echo "$HEADER: Export -----"
 	export
 	echo ""
-	echo "${HEADER}: Storage -----"
+	echo "$HEADER: Storage -----"
 	df -ah
 	echo ""
 }
+export -f scriptFailed
 
 #######################
 # Output runtime metrics to a log file.
@@ -123,6 +127,7 @@ function storeMetrics {
 		$(printHMS $SECONDS) | \
 		tee -a ${BACKDIR}metrics.txt >> ${HOME}/metrics.txt
 }
+export -f storeMetrics
 
 #####################
 # Return a string with a new item on the end
@@ -147,6 +152,7 @@ function appendList {
 		printf "%s" "$oldList"
 	fi
 }
+export -f appendList
 
 ######################
 # Return the string with the split char replaced by a space
@@ -162,6 +168,7 @@ function splitByChar {
 		(>&2 echo -ne "FAILURE:\t splitByChar [${1}] [${2}]\n\tNo character to replace. You forget to quote your input?\n")
 	fi
 }
+export -f splitByChar
 
 ######################
 # Find matching task elements in a parent and child array.
@@ -189,11 +196,75 @@ function tieTaskDeps {
 		done
 	fi
 }
-
-# Export all function for use in calling script.
-export -f printHMS
-export -f scriptFailed
-export -f storeMetrics
-export -f appendList
-export -f splitByChar
 export -f tieTaskDeps
+
+##################
+# Create output olders in the temp and final destination locations.
+##################
+function outDirs {
+	# Make sure destination location exists.
+	if ! mkdir -p $(dirname ${OUTPUT}); then
+		echo "$HEADER: Unable to create output folder ${PWD}/${OUTPUT}!"
+		exit 1
+	fi
+	
+	if ! mkdir -p $(dirname ${JOB_TEMP_DIR}/${OUTPUT}); then
+		echo "$HEADER: Unable to create temp output folder ${JOB_TEMP_DIR}/${OUTPUT}!"
+		exit 1
+	fi
+}
+export -f outDirs
+
+##################
+# Check if final output exists.
+##################
+function outFile {
+	if [ -e ${OUTPUT} ]; then
+		echo "$HEADER: Output file \"${OUTPUT}\" already exists!"
+		exit 1
+	fi
+}
+export -f outFile
+
+#################
+# Make sure input file exists
+#################
+function inFile {
+	if [ ! -e ${INPUT} ]; then
+		echo "$HEADER: Input file \"${INPUT}\" doesn't exists!"
+		ls -la $(dirname $INPUT)
+		exit 1
+	fi
+}
+export inFile
+
+###################
+# Move temp output to final output locations
+###################
+function finalOut {
+	if ! mv ${JOB_TEMP_DIR}/${OUTPUT} ${OUTPUT}; then
+		echo "$HEADER: Failed to move ${JOB_TEMP_DIR}/${OUTPUT} to ${PWD}/${OUTPUT}!"
+		exit 1
+	fi
+}
+export -f finalOut
+
+####################
+# Check if command filed
+####################
+function cmdFailed {
+	exitCode=$?
+	echo "$HEADER: [$SLURM_JOB_NAME:$SLURM_JOBID:$SLURM_ARRAY_TASK_ID] failed with $exitCode!"
+}
+export -f cmdFailed
+
+###################
+# Outputs a dependency if one exists.
+###################
+function depCheck {
+	if [ "$1" != "" ]
+	then
+		echo -ne "--dependency afterok:${1}"
+	fi
+}
+export -f depCheck

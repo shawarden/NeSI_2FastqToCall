@@ -6,8 +6,8 @@
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
 #SBATCH --mail-type=FAIL
 #SBATCH --constraint=avx
-#SBATCH --error=slurm/BR_%j.out
-#SBATCH --output=slurm/BR_%j.out
+#SBATCH --error=slurm/BR_%A_%a.out
+#SBATCH --output=slurm/BR_%A_%a.out
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
@@ -15,14 +15,14 @@ CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
  INPUT=markdup/${CONTIG}.bam
 OUTPUT=baserecal/${CONTIG}.firstpass
 
-echo "BR: ${INPUT} -> ${OUTPUT}"
+HEADER="BR"
+
+echo "$HEADER: ${INPUT} -> ${OUTPUT}"
 date
 
-if [ ! -e ${INPUT} ]; then
-	echo "BR: Input file \"${INPUT}\" doesn't exist!"
-#	scriptFailed "BR"
-	exit 1
-fi
+# Make sure input and target folders exists and that output file does not!
+if ! inFile; then exit 1; fi
+if ! outFile; then exit 1; fi
 
 GATK_PROC=BaseRecalibrator
 GATK_ARGS="-T ${GATK_PROC} \
@@ -35,19 +35,10 @@ GATK_ARGS="-T ${GATK_PROC} \
 module load ${MOD_JAVA}
 
 CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${GATK} ${GATK_ARGS} -I ${INPUT} -o ${OUTPUT}"
-echo "BR: ${CMD}" | tee -a commands.txt
+echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 ${CMD}
-passed=$?
-
-echo "BR: ${INPUT} -> ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS %3600) / 60))m $(($SECONDS % 60))s"
-date
-
-if [ $passed -ne 0 ]; then
-	echo "BR: ${INPUT} Failed."
-#	scriptFailed "BR"
-	exit 1
-fi
+if cmdFailed; then exit 1; fi
 
 touch ${OUTPUT}.done
 

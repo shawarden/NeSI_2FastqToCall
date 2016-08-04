@@ -13,14 +13,14 @@ source /projects/uoo00032/Resources/bin/baserefs.sh
 
 CONTIG=${1}
 
+HEADER="HC"
+
 if [ "${CONTIG}" == "" ]; then	# Contig not defined. X & Y subtypes.
 	CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
 fi
 
  INPUT=printreads/${CONTIG%:*}.bam	# Strip contig coordinates.
 OUTPUT=haplo/${CONTIG}.g.vcf.gz
-
-echo "HC: ${@}"
 
 if [ -e coverage.sh ]; then
 	# Gender file exists so obtain values from it.
@@ -42,14 +42,13 @@ else
 	intervalPloidy=2
 fi
 
-echo "HC: ${INPUT} + ${CONTIG}c + ${intervalPloidy}p -> ${OUTPUT}"
+echo "$HEADER: ${INPUT} + ${CONTIG}c + ${intervalPloidy}p -> ${OUTPUT}"
 date
 
-if [ ! -e ${INPUT} ]; then
-	echo "HC: Input file \"${INPUT}\" doesn't exist!"
-#	scriptFailed "HC"
-	exit 1
-fi
+# Make sure input and target folders exists and that output file does not!
+if ! inFile; then exit 1; fi
+if ! outDirs; then exit 1; fi
+if ! outFile; then exit 1; fi
 
 GATK_PROC=HaplotypeCaller
 GATK_ARGS="-T ${GATK_PROC} \
@@ -62,20 +61,14 @@ GATK_ARGS="-T ${GATK_PROC} \
 
 module load ${MOD_JAVA}
 
-CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar $GATK ${GATK_ARGS} -I ${INPUT} -o ${OUTPUT}"
-echo "HC: ${CMD}" | tee -a commands.txt
+CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar $GATK ${GATK_ARGS} -I ${INPUT} -o ${JOB_TEMP_DIR}/${OUTPUT}"
+echo "$HEADER ${CMD}" | tee -a commands.txt
 
 ${CMD}
-passed=$?
+if cmdFailed; then exit 1; fi
 
-echo "HC: ${INPUT} + ${CONTIG} + ${intervalPloidy} -> ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
-date
-
-if [ $passed -ne 0 ]; then
-	echo "HC: ${OUTPUT} failed!"
-#	scriptFailed "HC"
-	exit 1
-fi
+# Move output to final location
+if ! finalOut; then exit 1; fi
 
 touch ${OUTPUT}.done
 

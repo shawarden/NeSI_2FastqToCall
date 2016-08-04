@@ -15,14 +15,15 @@ SAMPLE=${1}
  INPUT=${2}
 OUTPUT=${3}
 
-echo "SS: ${SAMPLE} ${INPUT} to ${OUTPUT}"
+HEADER="SS"
+
+echo "$HEADER: ${SAMPLE} ${INPUT} to ${OUTPUT}"
 date
 
-if [ ! -e ${INPUT} ]; then
-	echo "SS: Input file \"${INPUT}\" doesn't exist!"
-#	scriptFailed "SS"
-	exit 1
-fi
+# Make sure input and target folders exists and that output file does not!
+if ! inFile; then exit 1; fi
+if ! outDirs; then exit 1; fi
+if ! outFile; then exit 1; fi
 
 module load ${MOD_JAVA}
 
@@ -32,22 +33,16 @@ COMPRESSION_LEVEL=9 \
 MAX_RECORDS_IN_RAM=${MAX_RECORDS} \
 TMP_DIR=${JOB_TEMP_DIR}"
 
-CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} SortSam ${PIC_ARGS} INPUT=${INPUT} OUTPUT=${OUTPUT}"
-echo "SS: ${CMD}" | tee -a ../commands.txt
+CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} SortSam ${PIC_ARGS} INPUT=${INPUT} OUTPUT=${JOB_TEMP_DIR}/${OUTPUT}"
+echo "$HEADER: ${CMD}" | tee -a ../commands.txt
 
 ${CMD}
-passed=$?
+if cmdFailed; then exit 1; fi
 
-echo "SS: Sorted ${INPUT} to ${OUTPUT} in $(($SECONDS / 3600))h $((($SECONDS %3600) / 60))m $(($SECONDS % 60))s"
-date
+# Move output to final location
+if ! finalOut; then exit 1; fi
 
-if [ $passed -ne 0 ]; then
-	echo "SS: Failed ${SAMPLE} ${INPUT}!"
-#	scriptFailed "SS"
-	exit 1
-fi
-
-rm ${INPUT}
+rm ${INPUT} && echo "$HEADER: Purged aligned files!"
 
 touch ${OUTPUT}.done
 

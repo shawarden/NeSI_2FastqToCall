@@ -14,18 +14,15 @@ source /projects/uoo00032/Resources/bin/baserefs.sh
  INPUT=${2}
 OUTPUT=${3}
 
-echo "TF: IDN:${IDN} + INPUT:${INPUT} -> OUTPUT:${OUTPUT}"
+HEADER="TF"
 
-if [ "${INPUT}" == "" ] || [ ! -e ${INPUT} ]
-then
-	echo "TF: \"${INPUT}\" doesn't exist!"
-#	scriptFailed "TF"
-	exit 1
-fi
+echo "$HEADER: IDN:${IDN} + INPUT:${INPUT} -> OUTPUT:${OUTPUT}"
+
+if ! inFile; then exit 1; fi
 
 if [ "${OUTPUT}" == "" ]
 then
-	echo "TF: Output not defined. Using input:${INPUT}"
+	echo "$HEADER: Output not defined. Using input:${INPUT}"
 	OUTPUT=${INPUT}
 fi
 
@@ -33,34 +30,23 @@ LABEL=$(echo $(basename ${OUTPUT}) | tr '.' '_')
 
 if [ -e ${LABEL}.transfer.done ]
 then
-	echo "TF: $LABEL already started!"
+	echo "$HEADER: $LABEL already started!"
 	exit 0
 fi
 
 if [ "${OUTPUT}" == "$(basename ${OUTPUT})" ]
 then
-	echo "TF: Output file has not pathing. Storing in temp folder."
+	echo "$HEADER: Output file has not pathing. Storing in temp folder."
 	OUTPUT="~/projects/NeSI_Transfer/${IDN}/${OUTPUT}"
 fi
 
-echo "TF: ${INPUT} -> ${OUTPUT}"
+echo "$HEADER: ${INPUT} -> ${OUTPUT}"
 date
 
 CMD="ssh globus transfer --encrypt --perf-cc 4 --perf-p 8 --label \"${LABEL}\" -- nz#uoa/$(pwd)/${INPUT} nesi#otago-dtn01/${OUTPUT}"
-echo "TF: ${CMD}" | tee -a commands.txt
+echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 ${CMD}
-passed=$?
-
-echo "TF:  ${INPUT} -> ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
-date
-
-if [ $passed -ne 0 ]; then
-	echo "TF: ${OUTPUT} failed!"
-#	scriptFailed "TF"
-	exit 1
-fi
+if cmdFailed; then exit 1; fi
 
 touch ${LABEL}.transfer.done
-
-#storeMetrics	# Unless we're going to wait around for this, why do we need the metrics?

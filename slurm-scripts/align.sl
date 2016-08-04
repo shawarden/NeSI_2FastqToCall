@@ -16,17 +16,23 @@ READGROUP=${2}
     BLOCK=${3}
    OUTPUT=${4}
 
+HEADER="PA"
+   
 READ1=blocks/${READGROUP}_R1_${BLOCK}.fastq.gz
 READ2=blocks/${READGROUP}_R2_${BLOCK}.fastq.gz
 
-echo "PA: ${READGROUP} ${READ1} ${READ2} to ${OUTPUT}"
+echo "$HEADER: ${READGROUP} ${READ1} ${READ2} to ${OUTPUT}"
 date
 
-if [ ! -e ${READ1} ] || [ ! -e ${READ2} ]; then
-	echo "PA: A read files doesn't exist!"
-#	scriptFailed "PA"
-	exit 1
-fi
+# Make sure input and target folders exists and that output file does not!
+INPUT="$READ1"
+if ! inFile; then exit 1; fi
+
+INPUT="$READ2"
+if ! inFile; then exit 1; fi
+
+if ! outDirs; then exit 1; fi
+if ! outFile; then exit 1; fi
 
 # Get readgroup blocks from either INFO_INFO_INFO_.. or INFO INFO INFO ...
      INTRUMENT=$(echo ${READGROUP} | awk -F'[[:blank:]_]' '{print $1}')
@@ -41,24 +47,15 @@ RG_PU="PU:${FLOW_CELL}.${CELL_LANE}"
 RG_LB="LB:${SAMPLE}"
 RG_SM="SM:$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $1}')"
 
-echo "PA: ${BWA} mem -M -t ${SLURM_JOB_CPUS_PER_NODE} -R @RG'\t'$RG_ID'\t'$RG_PL'\t'$RG_PU'\t'$RG_LB'\t'$RG_SM $REF $READ1 $READ2 | ${SAMTOOLS} view -bh - > ${OUTPUT}" | tee -a ../commands.txt
+echo "$HEADER: ${BWA} mem -M -t ${SLURM_JOB_CPUS_PER_NODE} -R @RG'\t'$RG_ID'\t'$RG_PL'\t'$RG_PU'\t'$RG_LB'\t'$RG_SM $REF $READ1 $READ2 | ${SAMTOOLS} view -bh - > ${OUTPUT}" | tee -a ../commands.txt
 
-${BWA} mem -M -t ${SLURM_JOB_CPUS_PER_NODE} -R @RG'\t'$RG_ID'\t'$RG_PL'\t'$RG_PU'\t'$RG_LB'\t'$RG_SM $REF $READ1 $READ2 | ${SAMTOOLS} view -bh - > ${OUTPUT}
+${BWA} mem -M -t ${SLURM_JOB_CPUS_PER_NODE} -R @RG'\t'$RG_ID'\t'$RG_PL'\t'$RG_PU'\t'$RG_LB'\t'$RG_SM $REF $READ1 $READ2 | ${SAMTOOLS} view -bh - > ${JOB_TEMP_DIR}/${OUTPUT}
+if cmdFailed; then exit 1; fi
 
-passed=$((${PIPESTATUS[0]} + ${PIPESTATUS[1]}))
+# Move output to final location
+if ! finalOut; then exit 1; fi
 
-#mv ${JOB_TEMP_DIR}/${OUTPUT} ${OUTPUT} && rm ${JOB_TEMP_DIR}/${OUTPUT}
-
-echo "PA: ${READGROUP} ${READ1} and ${READ2} ran for $(($SECONDS / 3600))h $((($SECONDS %3600) / 60))m $(($SECONDS % 60))s"
-date
-
-if [ $passed -ne 0 ] || [ $(stat --printf="%s" ${OUTPUT}) -lt 50 ]; then
-	echo "PA: ${READ1} and ${READ2} failed!"
-#	scriptFailed "PA"
-	exit 1
-fi
-
-rm ${READ1} ${READ2}
+rm ${READ1} ${READ2} && echo "$HEADER: Purged read files!"
 
 touch ${OUTPUT}.done
 

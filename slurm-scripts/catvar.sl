@@ -11,23 +11,27 @@
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
- INPUT=${1}
+ FILES=${1}
 OUTPUT=${2}
 IDN=$(echo $SLURM_JOB_NAME | cut -d'_' -f2)
 
-echo "CV: ${INPUT} -> ${OUTPUT}"
+HEADER="CV"
+
+echo $HEADER $INPUT "->" $OUTPUT
 date
 
 mergeList=""
-for file in ${INPUT}; do
-	if [ -e $file ]; then
-		mergeList="${mergeList} -V ${file}"
-	else
-		echo "CV: $file doesn't exist!"
-#		scriptFailed "CarVar"
+for INPUT in ${FILES}; do
+	if ! inFile; then
 		exit 1
+	else 
+		mergeList="${mergeList} -V ${INPUT}"
 	fi
 done
+
+# Make sure input and target folders exists and that output file does not!
+if ! outDirs; then exit 1; fi
+if ! outFile; then exit 1; fi
 
 GATK_PROC=org.broadinstitute.gatk.tools.CatVariants
 GATK_ARGS="${GATK_PROC} \
@@ -36,22 +40,16 @@ GATK_ARGS="${GATK_PROC} \
 
 module load ${MOD_JAVA}
 
-CMD="$(which srun) $(which java) ${JAVA_ARGS} -cp $GATK ${GATK_ARGS} ${mergeList} -out ${OUTPUT}"
-echo "CV: ${CMD}" | tee -a commands.txt
+CMD="$(which srun) $(which java) ${JAVA_ARGS} -cp $GATK ${GATK_ARGS} ${mergeList} -out ${JOB_TEMP_DIR}/${OUTPUT}"
+echo "$HEADER ${CMD}" | tee -a commands.txt
 
 ${CMD}
-passed=$?
+if cmdFailed; then exit 1; fi
 
-echo "CV: ${INPUT} -> ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
-date
+# Move output to final location
+if ! finalOut; then exit 1; fi
 
-if [ $passed -ne 0 ]; then
-	echo "CV: ${OUTPUT} failed!"
-#	scriptFailed "CarVar"
-	exit 1
-fi
-
-rm ${INPUT}
+rm $FILES && echo "$HEADER: Purged input files!"
 
 touch ${OUTPUT}.done
 

@@ -11,49 +11,32 @@
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
-INPUT=${1}
+FILES=${1}
 OUTPUT=${2}
-INDEX_OUTPUT=${OUTPUT%.bam}.bai
 IDN=$(echo $SLURM_JOB_NAME | cut -d'_' -f2)
 
-HEADER=$(echo ${INPUT} | awk '{print $1}')
+BAMHEAD=$(echo ${INPUT} | awk '{print $1}')
 
-echo "CR: ${INPUT} + HeaderOf(${HEADER})-> ${OUTPUT}"
+HEADER="CR"
+
+echo $HEADER: $FILES + "Header($BAMHEAD) ->" $OUTPUT
 date
 
-for file in ${INPUT}; do
-	if [ ! -e ${file} ]; then
-		echo "CR: \"${file}\" doesn't exist!"
-#		scriptFailed "CarReads"
-		exit 1
-	fi
+for INPUT in ${FILES}; do
+	if ! inFile; then exit 1; fi
 done
 
-inputCount=$(echo ${INPUT} | wc -w)
-contigCount=$(echo ${CONTIGS} | wc -w)
+if ! outDirs; then exit 1; fi
+if ! outFile; then exit 1; fi
 
-if [ $inputCount -ne $contigCount ]; then
-	echo "CR: Input file count (${inputCount}) doesn't match contig count (${contigCount})!"
-#	scriptFailed "CarReads"
-	exit 1
-else
-	echo "CR: Input file count (${inputCount}) matches contig count (${contigCount})"
-fi
-
-CMD="$(which srun) ${SAMTOOLS} cat -h ${HEADER} -o ${OUTPUT} ${INPUT}"
-echo "CR: ${CMD1}, ${CMD2}" | tee -a commands.txt
+CMD="$(which srun) ${SAMTOOLS} cat -h ${BAMHEAD} -o ${JOB_TEMP_DIR}/${OUTPUT} ${FILES}"
+echo "$HEADER: ${CMD1}, ${CMD2}" | tee -a commands.txt
 
 ${CMD}
-passed=$?
+if cmdFailed; then exit 1; fi
 
-echo "CR: ${INPUT} -> ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
-date
-
-if [ $passed -ne 0 ]; then
-	echo "CR: ${INPUT} -> ${OUTPUT} Failed!"
-#	scriptFailed "CR"
-	exit 1
-fi
+# Move output to final location
+if ! finalOut; then exit 1; fi
 
 touch ${OUTPUT}.done
 

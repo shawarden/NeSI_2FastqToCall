@@ -6,30 +6,30 @@
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
 #SBATCH --mail-type=FAIL
 #SBATCH --constraint=avx
-#SBATCH --error=slurm/RS_%j.out
-#SBATCH --output=slurm/RS_%j.out
+#SBATCH --error=slurm/RS_%A_%a.out
+#SBATCH --output=slurm/RS_%A_%a.out
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
-  SAMPLE=${1}
- READNUM=${2}
-READFILE=${3}
+SAMPLE=${1}
+READNUM=${SLURM_ARRAY_TASK_ID}
+ 
+[ $READNUM -eq 1 ] && INPUT=${2} || INPUT=${3}
+  
+HEADER="RS"
 
-echo "RS: ${READNUM} ${READFILE}"
+echo "$HEADER: R${READNUM} ${INPUT}"
 date
 
-if [ ! -e ${READFILE} ]; then
-	echo "RS: Can't find ${READFILE}"
-#	scriptFailed "ReadSplit"
-	exit 1
-fi
+# Make sure input exists!
+if ! inFile; then exit 1; fi
 
 module load ${MOD_ZLIB}
 
 # Scan the FastQ file for index sequence.
 # Returns the index with the highest count within FASTQ_MAXSCAN lines from top.
 function getBestIndex {
-	${CAT_CMD} ${READFILE} | head -${FASTQ_MAXSCAN} | awk \
+	${CAT_CMD} ${INPUT} | head -${FASTQ_MAXSCAN} | awk \
 	-F':' \
 	'NR%4==1{words[$10]++}
 	END {
@@ -44,9 +44,10 @@ function getBestIndex {
 # If the index varies by more than FASTQ_MAXDIFF then split to new output file.
 # Output files are appended with the index line data.
 function splitByReadGroupAndCompress {
-	${CAT_CMD} ${READFILE} | awk -F'[@:]' \
+	if ! ${CAT_CMD} ${INPUT} | awk -F'[@:]' \
+		-v outHeader="${HEADER}" \
 		-v sampleID="${SAMPLE}" \
-		-v readNumber="${READNUM}" \
+		-v readNumber="R${READNUM}" \
 		-v seqIndex="${bestIndex}" \
 		-v maxDelta="${FASTQ_MAXDIFF}" \
 		-v splitPoint="${FASTQ_MAXREAD}" \
@@ -59,10 +60,10 @@ function splitByReadGroupAndCompress {
 			if (system("[ -e blocks/*_"readNumber"_"curBlock".fastq.gz.done ]") == 0) {
 				# a blocks/..._Rn_00000.fastq.gz.done file exists so skip this block
 				writeBlock=0
-				print "RS: Skipping block "curBlock" as it is already completed!"
+				print outHeader": Skipping block "curBlock" as it is already completed!"
 			} else {
 				writeBlock=1
-				print "RS: Block "curBlock" does not exist yet. Writing..."
+				print outHeader": Block "curBlock" does not exist yet. Writing..."
 			}
 		}
 		NR%4==1{
@@ -71,9 +72,9 @@ function splitByReadGroupAndCompress {
 				if (writeBlock) {
 					close (outStream)
 					system("touch "outFile".done")
-					print "RS: Block "curBlock" finished at "readsProcessed" reads. Starting "sprintf("%05d", blockCount)
+					print outHeader": Block "curBlock" finished at "readsProcessed" reads. Starting "sprintf("%05d", blockCount)
 				} else {
-					print "RS: Block "curBlock" already written. Moving on to "sprintf("%05d", blockCount)
+					print outHeader": Block "curBlock" already written. Moving on to "sprintf("%05d", blockCount)
 				}
 				
 				# Spawn alignment if the next block in the sequence exists for both reads.
@@ -85,7 +86,7 @@ function splitByReadGroupAndCompress {
 				
 				if (system("[ -e "outFile".done ]") == 0) {
 					# The new outfile.done already exists! Skip this block
-					print "RS: Skipping block "curBlock" as it is already completed!"
+					print outHeader": Skipping block "curBlock" as it is already completed!"
 					writeBlock=0
 				} else {
 					writeBlock=1
@@ -132,50 +133,35 @@ function splitByReadGroupAndCompress {
 			if (writeBlock) {
 				close (outStream)
 				system("touch "outFile".done")
-				print "RS: Block "blockCount" with "readsProcessed" read."
+				print outHeader": Block "blockCount" with "readsProcessed" read."
 			} else {
-				print "RS: Block "blockCount" already exists with "readsProcessed" reads."
+				print outHeader": Block "blockCount" already exists with "readsProcessed" reads."
 			}
 			
 			system(pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "curBlock)
-		}'
+		}
+	'; then
+		exit 1
+	fi
 }
 
 [ "$(which pigz)" != "" ] && ZIP_CMD="pigz" || ZIP_CMD="gzip"
-[ "${READFILE##*.}" != "gz" ] && CAT_CMD=cat || CAT_CMD="${ZIP_CMD} -cd"
+[ "${INPUT##*.}" != "gz" ] && CAT_CMD=cat || CAT_CMD="${ZIP_CMD} -cd"
 
-echo "RS: Zip command: ${ZIP_CMD}"
-echo "RS: Cat command: ${CAT_CMD}"
+echo "$HEADER: Zip command: ${ZIP_CMD}"
+echo "$HEADER: Cat command: ${CAT_CMD}"
 
 bestIndex=$(getBestIndex)
 
-echo "RS: Best index is [${bestIndex}]"
+echo "$HEADER: Best index is [${bestIndex}]"
 
 mkdir -p blocks
 
 splitByReadGroupAndCompress
-passed=$?
+if cmdFailed; then exit 1; fi
 
-echo "RS: Splitting ${READFILE} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
-date
+#rm ${INPUT} && echo "$HEADER: Purged input file!"
 
-if [ $passed -ne 0 ]; then
-	echo "RS: Failed to split ${READFILE}"
-#	scriptFailed "RS"
-	exit 1
-fi
-
-#if [ $(cat ${READNUM}_ReadGroup.txt | wc -w) -gt 1 ]
-#then
-#	for prefix in $(cat ${READNUM}_ReadGroup.txt)
-#	do
-#		echo "RS: Compressing ReadGroup ${prefix}: $(sbatch -J ReadMultiple_${prefix} s0_split_multiple.sl ${prefix}_${READNUM} | awk '{print $4}')"
-#	done;
-#	exit 1
-#fi
-
-#rm ${READFILE}
-
-touch ${SAMPLE}_${READNUM}_split.done
+touch ${SAMPLE}_R${READNUM}_split.done
 
 storeMetrics run

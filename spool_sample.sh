@@ -52,28 +52,32 @@ fi
 cd ${SAMPLE_PATH}
 
 # Split read 1 and 2 into chunks
-if [ ! -e ${SAMPLE}_R1_split.done ] || [ ! -e ${SAMPLE}_R2_split.done ]; then
-	# One of the reads isn't finished yet. Run them both.
-	
-	if [ ! -e ${SAMPLE}_R1_split.done ]; then
-		# Read 1 split isn't complete, run it now.
-		read1Size=$(ls -lah ${READ1} | awk '{print $5}')
-		DEP_SR1=$(sbatch -J RS_${SAMPLE}_R1_${read1Size} ${SLSBIN}/readsplit.sl ${SAMPLE} R1 ${READ1} | awk '{print $4}')
-		printf "%-12s%s\n" "Split 1" "${DEP_SR1}"
+splitReadArray=""
+
+printf "%-12s" "Split Reads"
+
+if [ ! -e ${SAMPLE}_R1_split.done ]; then
+	splitReadArray=$(appendList "$splitReadArray" 1 ",")
+fi
+
+if [ ! -e ${SAMPLE}_R2_split.done ]; then
+	splitReadArray=$(appendList "$splitReadArray" 2 ",")
+fi
+
+# Read 1 split isn't complete, run it now.
+read1Size=$(ls -lah ${READ1} | awk '{print $5}')
+read2Size=$(ls -lah ${READ2} | awk '{print $5}')
+
+if [ "$splitReadArray" != "" ]; then
+	DEP_SR=$(sbatch -J RS_${SAMPLE}_${read1Size}_${read2Size} -a $splitReadArray ${SLSBIN}/readsplit.sl ${SAMPLE} ${READ1} ${READ2} | awk '{print $4}')
+	if [ $? -ne 0 ] || [ "$DEP_SR" == "" ]; then
+		printf "FAILED!\n"
+		exit 1
 	else
-		printf "%-12s%s\n" "Split 1" "Done!"
-	fi
-	
-	if [ ! -e ${SAMPLE}_R2_split.done ]; then
-		# Read 2 split isn't complete. run it now.
-		read2Size=$(ls -lah ${READ2} | awk '{print $5}')
-		DEP_SR2=$(sbatch -J RS_${SAMPLE}_R2_${read2Size} ${SLSBIN}/readsplit.sl ${SAMPLE} R2 ${READ2} | awk '{print $4}')
-		printf "%-12s%s\n" "Split 2" "${DEP_SR2}"
-	else
-		printf "%-12s%s\n" "Split 2" "Done!"
+		printf "%s\n" "${DEP_SR}"
 	fi
 else
-	printf "%-12s%s\n" "Split" "Done! Aligning..."
+	printf "done -> Aligning..."
 	# Both reads are done. Build read list and spool alignments.
 	READGROUP=$(cat blocks/R1_ReadGroup.txt)
 	readBlocks=$(($(find ./blocks -type f -iname "${READGROUP}_R1_*.fastq.gz.done" | wc -l) -1))
@@ -88,3 +92,8 @@ else
 fi
 
 exit 0
+
+# Generate an array 
+DEP_PA=$(sbatch -J PA_${SAMPLE} $(depCheck ${DEP_SR}) ${SLSBIN}/align_arr.sl ${SAMPLE} ${READGROUP} | awk '{print $4}')
+DEP_SS=$(sbatch -J SS_${SAMPLE} $(depCheck ${DEP_PA}) ${SLSBIN}/align_arr.sl ${SAMPLE} ${READGROUP} | awk '{print $4}')
+

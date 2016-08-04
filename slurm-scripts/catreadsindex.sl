@@ -11,38 +11,28 @@
 
 source /projects/uoo00032/Resources/bin/baserefs.sh
 
-INPUT="${1}"
-OUTPUT="${2}"
+INPUT=${1}
+OUTPUT=$([ "${2}" == "" ] && echo -ne "${INPUT%.bam}.bai" || echo -ne "${2}")
 IDN=$(echo $SLURM_JOB_NAME | cut -d'_' -f2)
 
-if [ "$OUTPUT" == "" ]; then
-	echo "RI: No output defined. Usuing input."
-	OUTPUT=${INPUT%.bam}.bai
-fi
+HEADER=RI
 
-echo "RI: ${INPUT} -> ${OUTPUT}"
+echo "$HEADER: ${INPUT} -> ${OUTPUT}"
 date
 
-if [ ! -e ${INPUT} ]; then
-	echo "RI: \"${file}\" doesn't exist!"
-#	scriptFailed "CarReadsIndex"
-	exit 1
-fi
+# Make sure input and target folders exists and that output file does not!
+if ! inFile; then exit 1; fi
+if ! outDirs; then exit 1; fi
+if ! outFile; then exit 1; fi
 
-CMD="$(which srun) ${SAMTOOLS} index ${INPUT} ${OUTPUT}"
-echo "RI: ${CMD}" | tee -a commands.txt
+CMD="$(which srun) ${SAMTOOLS} index ${INPUT} ${JOB_TEMP_DIR}/${OUTPUT}"
+echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 ${CMD}
-passed=$?
+if cmdFailed; then exit 1; fi
 
-echo "RI: ${INPUT} -> ${OUTPUT} ran for $(($SECONDS / 3600))h $((($SECONDS % 3600) / 60))m $(($SECONDS % 60))s"
-date
-
-if [ $passed -ne 0 ]; then
-	echo "RI: ${INPUT} -> ${OUTPUT} failed!"
-#	scriptFailed "RI"
-	exit 1
-fi
+# Move output to final location
+if ! finalOut; then exit 1; fi
 
 touch ${OUTPUT}.done
 

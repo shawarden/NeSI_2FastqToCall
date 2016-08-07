@@ -63,6 +63,8 @@ export TRUEY="Y:2649521-59034050"
 export FASTQ_MAXREAD=10000000	# How many reads per block.
 export FASTQ_MAXSCAN=10000		# How many lines to check for best index.
 export FASTQ_MAXDIFF=2			# Maximum index variation before new index is created.
+export FASTQ_MAXJOBS=1000		# Maximum number of alignment & sort array elements.
+export FASTQ_MAXZPAD=${#FASTQ_MAXJOBS}	# Number of characters to pad to blocks.
 
 ###########################
 # Java memory calculation #
@@ -254,7 +256,10 @@ export -f finalOut
 ####################
 function cmdFailed {
 	exitCode=$?
-	echo "$HEADER: [$SLURM_JOB_NAME:$SLURM_JOBID:$SLURM_ARRAY_TASK_ID] failed with $exitCode!"
+	if [ $exitCode -ne 0 ]; then
+		echo "$HEADER: [$SLURM_JOB_NAME:$SLURM_JOBID:$SLURM_ARRAY_TASK_ID] failed with $exitCode!"
+		exit 1
+	fi
 }
 export -f cmdFailed
 

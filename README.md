@@ -19,6 +19,11 @@
 
 # Update history
 
+## 2016-08-08
+
+### Changed
+- Moved files to their own repo folder for commandline commits etc.
+
 ## 2016-08-04
 
 ### Changed

@@ -45,18 +45,19 @@ function getBestIndex {
 # Output files are appended with the index line data.
 function splitByReadGroupAndCompress {
 	if ! ${CAT_CMD} ${INPUT} | awk -F'[@:]' \
-		-v outHeader="${HEADER}" \
-		-v sampleID="${SAMPLE}" \
-		-v readNumber="R${READNUM}" \
-		-v seqIndex="${bestIndex}" \
-		-v maxDelta="${FASTQ_MAXDIFF}" \
-		-v splitPoint="${FASTQ_MAXREAD}" \
-		-v compCmd="${ZIP_CMD}" \
-		-v pBin="${PBIN}" \
+		-v zeroPad="$FASTQ_MAXZPAD" \
+		-v outHeader="$HEADER" \
+		-v sampleID="$SAMPLE" \
+		-v readNumber="R$READNUM" \
+		-v seqIndex="$bestIndex" \
+		-v maxDelta="$FASTQ_MAXDIFF" \
+		-v splitPoint="$FASTQ_MAXREAD" \
+		-v compCmd="$ZIP_CMD" \
+		-v pBin="$PBIN" \
 		'
 		BEGIN{
 			blockCount=0
-			curBlock=sprintf("%05d", blockCount)
+			curBlock=sprintf("%0"zeroPad"d", blockCount)
 			if (system("[ -e blocks/*_"readNumber"_"curBlock".fastq.gz.done ]") == 0) {
 				# a blocks/..._Rn_00000.fastq.gz.done file exists so skip this block
 				writeBlock=0
@@ -72,16 +73,19 @@ function splitByReadGroupAndCompress {
 				if (writeBlock) {
 					close (outStream)
 					system("touch "outFile".done")
-					print outHeader": Block "curBlock" finished at "readsProcessed" reads. Starting "sprintf("%05d", blockCount)
+					print outHeader": Block "curBlock" finished at "readsProcessed" reads. Starting "sprintf("%0"zeroPad"d", blockCount)
 				} else {
-					print outHeader": Block "curBlock" already written. Moving on to "sprintf("%05d", blockCount)
+					print outHeader": Block "curBlock" already written. Moving on to "sprintf("%0"zeroPad"d", blockCount)
 				}
 				
-				# Spawn alignment if the next block in the sequence exists for both reads.
-				system("sleep 1s; "pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "sprintf("%05d", blockCount))
+				# Check if we are writing blocks or if we are not writing blocks then if read is 1, check for an alignment run.
+				if (writeBlock || readNumber=="R1") {
+					# Spawn alignment if the next block in the sequence exists for both reads.
+					system("sleep 1s; "pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "sprintf("%0"zeroPad"d", blockCount))
+				}
 				
 				# Update current block number
-				curBlock=sprintf("%05d", blockCount)
+				curBlock=sprintf("%0"zeroPad"d", blockCount)
 				outFile="blocks/"prefix"_"readNumber"_"curBlock".fastq.gz"
 				
 				if (system("[ -e "outFile".done ]") == 0) {

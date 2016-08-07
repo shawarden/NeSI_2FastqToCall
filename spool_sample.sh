@@ -94,6 +94,8 @@ fi
 exit 0
 
 # Generate an array 
-DEP_PA=$(sbatch -J PA_${SAMPLE} $(depCheck ${DEP_SR}) ${SLSBIN}/align_arr.sl ${SAMPLE} ${READGROUP} | awk '{print $4}')
-DEP_SS=$(sbatch -J SS_${SAMPLE} $(depCheck ${DEP_PA}) ${SLSBIN}/align_arr.sl ${SAMPLE} ${READGROUP} | awk '{print $4}')
+DEP_PA=$(sbatch -J PA_${SAMPLE} $(depCheck ${DEP_SR}) ${SLSBIN}/alignar.sl ${SAMPLE} ${READGROUP} | awk '{print $4}')
+DEP_SS=$(sbatch -J SS_${SAMPLE} $(depCheck ${DEP_PA}) ${SLSBIN}/sortar.sl ${SAMPLE} ${READGROUP} | awk '{print $4}')
+
+
 

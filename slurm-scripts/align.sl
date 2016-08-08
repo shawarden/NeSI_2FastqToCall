@@ -13,7 +13,7 @@
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
    SAMPLE=${1}
-READGROUP=${2}
+READGROUP=$(cat blocks/R1_ReadGroup.txt)
 
 # Block depends on input or array id.
 BLOCK=$([ "$3" != "" ] && printf "%0${FASTQ_MAXZPAD}d" $3 || printf "%0${FASTQ_MAXZPAD}d" $SLURM_ARRAY_TASK_ID)
@@ -27,6 +27,11 @@ READ2=blocks/${READGROUP}_R2_${BLOCK}.fastq.gz
 
 echo "$HEADER: $READGROUP $BLOCK $READ1 $READ2 -> $OUTPUT"
 date
+
+if [ $(cat "$READGROUP" | wc -w) -gt 1 ]; then
+	echo "$HEADER: Too many read-groups!"
+	exit 1
+fi
 
 # Make sure input and target folders exists and that output file does not!
 if ! (INPUT=${READ1}; inFile); then exit 1; fi

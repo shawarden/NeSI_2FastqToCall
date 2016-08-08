@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --account uoo00032
-#SBATCH --time=03:00:00
+#SBATCH --time=01:00:00
 #SBATCH --mem-per-cpu=4096
 #SBATCH --cpus-per-task=4
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz

@@ -55,7 +55,7 @@ cd ${SAMPLE_PATH}
 # Dispatch alignemnt & sort arrays.
 # Alignemnt array doens't have an dependency yet since ReadSplit needs to know what the aligner's JobID is to update it.
 printf "%-9s " "Dispatch (Align"
-DEP_PA=$(sbatch -J PA_${SAMPLE} --begin=now+10hour --array=0-999 ${SLSBIN}/alignar.sl ${SAMPLE} ${READGROUP} | awk '{print $4}')
+DEP_PA=$(sbatch -J PA_${SAMPLE} --begin=now+10hour --array=0-999 ${SLSBIN}/alignar.sl ${SAMPLE} | awk '{print $4}')
 if [ $? -ne 0 ] || [ "$DEP_PA" == "" ]; then
 	printf "FAILED!"
 	exit 1
@@ -65,7 +65,7 @@ fi
 
 # ReadSplit also needs to know Sort's JobID for the same reason.
 printf "%s " "-> Sorter"
-DEP_SS=$(sbatch -J SS_${SAMPLE} $(depCheck ${DEP_PA}) --array=0-999 ${SLSBIN}/sortar.sl ${SAMPLE} ${READGROUP} | awk '{print $4}')
+DEP_SS=$(sbatch -J SS_${SAMPLE} $(depCheck ${DEP_PA}) --array=0-999 ${SLSBIN}/sortar.sl ${SAMPLE} | awk '{print $4}')
 if [ $? -ne 0 ] || [ "$DEP_SS" == "" ]; then
 	printf "FAILED!"
 	exit 1

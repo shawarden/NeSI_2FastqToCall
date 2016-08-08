@@ -99,14 +99,14 @@ function spoolAlign {
 	if [ "$BLOCK" == "$NEXT" ]; then	# This is the final chunk so we can spool up the next step
 		echo "CB: Last split."
 		echo "CB: Purging excess Align and Sort array elements frmo $NEXT to 999!"
-		purgeList="[${NEXT}_999]"
+		purgeList="[${NEXT}-999]"
 		
 		# Purge extra align and sort array elements.
 		scancel ${ALIGNARR}_${purgeList} ${SORTARR}_${purgeList} && echo "CB: Purged ${ALIGNARR}_${purgeList} and ${SORTARR}_${purgeList}"
 		
 		# Spool second segment.
 		echo "CB: Spooling merge segement!"
-		spoolMerge
+		#spoolMerge
 	fi
 }
 

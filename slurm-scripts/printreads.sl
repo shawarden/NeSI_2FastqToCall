@@ -9,7 +9,7 @@
 #SBATCH --error=slurm/PR_%A_%a.out
 #SBATCH --output=slurm/PR_%A_%a.out
 
-source /projects/uoo00032/Resources/bin/baserefs.sh
+source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
 CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
  INPUT=markdup/${CONTIG}.bam
@@ -22,7 +22,7 @@ echo "$HEADER: ${INPUT} + ${BQSR} -> ${OUTPUT}"
 date
 
 # Make sure input and target folders exists and that output file does not!
-if ! inFile; then exit 1; 
+if ! inFile;  then exit 1; 
 if ! (INPUT=$(echo $BQSR); inFile); then exit 1
 if ! outDirs; then exit 1; fi
 if ! outFile; then exit 1; fi
@@ -39,8 +39,10 @@ module load ${MOD_JAVA}
 CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${GATK} ${GATK_ARGS} -I ${INPUT} -BQSR ${BQSR} -o ${JOB_TEMP_DIR}/${OUTPUT}"
 echo "$HEADER: ${CMD}" | tee -a commands.txt
 
-${CMD}
-if cmdFailed; then exit 1; fi
+if ! ${CMD}; then
+	cmdFailed
+	exit 1
+fi
 
 # Move output to final location
 if ! finalOut; then exit 1; fi

@@ -5,7 +5,7 @@
 #############################################################
 
 # Get base values
-source /projects/uoo00032/Resources/bin/baserefs.sh
+source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
 SAMPLE=${1}
 READ1=${FASTQS}/${2}
@@ -13,10 +13,10 @@ READ2=${FASTQS}/${3}
 PLATFORM=${4}
 LOCATION=${5}
 
-printf "%-12s%s\n" "SampleID" "${SAMPLE}"
-printf "%-12s%s\n" "Read 1" "${READ1}"
-printf "%-12s%s\n" "Read 2" "${READ2}"
-printf "%-12s%s\n" "PLATFORM" "${PLATFORM}"
+printf "%-9s%s\n" "SampleID" "${SAMPLE}"
+printf "%-9s%s\n" "Read 1" "${READ1}"
+printf "%-9s%s\n" "Read 2" "${READ2}"
+printf "%-9s%s\n" "PLATFORM" "${PLATFORM}"
 
 IDN=$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $1}')
 DNA=$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $2}')
@@ -45,16 +45,38 @@ date '+%Y%m%d_%H%M%S' > ${WORK_PATH}/${IDN}/starttime.txt
 
 # Purge existing merge dependencies, just in case!
 if [ -d ${SAMPLE_PATH}/mergeDeps ]; then
-	printf "%-12s%s\n" "Purging" "mergeDep!"
+	printf "%-9s%s\n" "Purging" "mergeDep!"
 	rm -r ${SAMPLE_PATH}/mergeDeps
 fi
 
 cd ${SAMPLE_PATH}
 
+
+# Dispatch alignemnt & sort arrays.
+# Alignemnt array doens't have an dependency yet since ReadSplit needs to know what the aligner's JobID is to update it.
+printf "%-9s " "Dispatch (Align"
+DEP_PA=$(sbatch -J PA_${SAMPLE} --begin=now+10hour --array=0-999 ${SLSBIN}/alignar.sl ${SAMPLE} ${READGROUP} | awk '{print $4}')
+if [ $? -ne 0 ] || [ "$DEP_PA" == "" ]; then
+	printf "FAILED!"
+	exit 1
+else
+	printf "%s " "${DEP_PA}"
+fi
+
+# ReadSplit also needs to know Sort's JobID for the same reason.
+printf "%s " "-> Sorter"
+DEP_SS=$(sbatch -J SS_${SAMPLE} $(depCheck ${DEP_PA}) --array=0-999 ${SLSBIN}/sortar.sl ${SAMPLE} ${READGROUP} | awk '{print $4}')
+if [ $? -ne 0 ] || [ "$DEP_SS" == "" ]; then
+	printf "FAILED!"
+	exit 1
+else
+	printf "%s) " "${DEP_SS}"
+fi
+
+printf "%s " "<- Split Reads"
+
 # Split read 1 and 2 into chunks
 splitReadArray=""
-
-printf "%-12s" "Split Reads"
 
 if [ ! -e ${SAMPLE}_R1_split.done ]; then
 	splitReadArray=$(appendList "$splitReadArray" 1 ",")
@@ -69,12 +91,15 @@ read1Size=$(ls -lah ${READ1} | awk '{print $5}')
 read2Size=$(ls -lah ${READ2} | awk '{print $5}')
 
 if [ "$splitReadArray" != "" ]; then
-	DEP_SR=$(sbatch -J RS_${SAMPLE}_${read1Size}_${read2Size} -a $splitReadArray ${SLSBIN}/readsplit.sl ${SAMPLE} ${READ1} ${READ2} | awk '{print $4}')
+	DEP_SR=$(sbatch -J RS_${SAMPLE}_${read1Size}_${read2Size} -a $splitReadArray ${SLSBIN}/readsplit.sl ${SAMPLE} ${READ1} ${READ2} ${DEP_PA} ${DEP_SS} | awk '{print $4}')
 	if [ $? -ne 0 ] || [ "$DEP_SR" == "" ]; then
 		printf "FAILED!\n"
 		exit 1
 	else
 		printf "%s\n" "${DEP_SR}"
+		
+		# Now that we have the ReadSplit jobID, assign the entire Alignment array to it.
+		scontrol update JobID=${DEP_PA} StartTime=now Dependency=afterok:${DEP_SR}
 	fi
 else
 	printf "done -> Aligning..."
@@ -87,15 +112,10 @@ else
 		else
 			nextBlock=$i
 		fi
-		${PBIN}/check_blocks.sh ${SAMPLE} ${READGROUP} R1 $(printf '%05d' $i) $(printf '%05d' $nextBlock)
+		${PBIN}/check_blocks.sh ${SAMPLE} ${READGROUP} R1 $(printf '%05d' $i) $(printf '%05d' $nextBlock $DEP_PA $DEP_SS)
 	done
 fi
 
-exit 0
-
-# Generate an array 
-DEP_PA=$(sbatch -J PA_${SAMPLE} $(depCheck ${DEP_SR}) ${SLSBIN}/alignar.sl ${SAMPLE} ${READGROUP} | awk '{print $4}')
-DEP_SS=$(sbatch -J SS_${SAMPLE} $(depCheck ${DEP_PA}) ${SLSBIN}/sortar.sl ${SAMPLE} ${READGROUP} | awk '{print $4}')
 
 
 

@@ -9,7 +9,7 @@
 #SBATCH --error=slurm/CR_%j.out
 #SBATCH --output=slurm/CR_%j.out
 
-source /projects/uoo00032/Resources/bin/baserefs.sh
+source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
 FILES=${1}
 OUTPUT=${2}
@@ -32,8 +32,10 @@ if ! outFile; then exit 1; fi
 CMD="$(which srun) ${SAMTOOLS} cat -h ${BAMHEAD} -o ${JOB_TEMP_DIR}/${OUTPUT} ${FILES}"
 echo "$HEADER: ${CMD1}, ${CMD2}" | tee -a commands.txt
 
-${CMD}
-if cmdFailed; then exit 1; fi
+if ! ${CMD}; then
+	cmdFailed
+	exit 1
+fi
 
 # Move output to final location
 if ! finalOut; then exit 1; fi

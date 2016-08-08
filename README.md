@@ -19,10 +19,23 @@
 
 # Update history
 
+
 ## 2016-08-08
 
 ### Changed
 - Moved files to their own repo folder for commandline commits etc.
+- Moved BWA alignment command to variable then execute with eval. This allows seemless echoing to log on changes.
+- Format of ReadSplit block number passed to check_block to allow array manipulation. Can't have five digit element counts can we?
+- ReadSplit runtime reduced from 5 hours to 2.5 hours as highest seen runtime is 2 hours.
+- PrimaryAlign runtime reduced 2 hours to 45 minutes as highest seen runtime is 20 minutes.
+- Moved Alignment and Sort array dispatch to be above ReadSplit so we can pass ReadSplit the array job ids.
+
+### Added
+- Alignment and Sort arrays submitted at start point. 1000 elements each that are purged of excess jobs once ReadSplit completes.
+
+### Fixed
+- cmdFailed function doesn't function as expected. Reverted to if ! ${CMD}; then...
+
 
 ## 2016-08-04
 
@@ -39,6 +52,7 @@
 ### Added
 - File exist checking to each sbatch script with detailed output.
 - Clean up sorted block output when all contig splitting has completed after any mergecontig runs
+
 
 ## 2016-08-03
 

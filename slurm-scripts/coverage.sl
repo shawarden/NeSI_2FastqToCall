@@ -9,7 +9,7 @@
 #SBATCH --error=slurm/GD_%j.out
 #SBATCH --output=slurm/GD_%j.out
 
-source /projects/uoo00032/Resources/bin/baserefs.sh
+source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
 IDN=${1}
 PLATFORM=${2}

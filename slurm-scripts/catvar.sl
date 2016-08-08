@@ -9,7 +9,7 @@
 #SBATCH --error=slurm/CV_%j.out
 #SBATCH --output=slurm/CV_%j.out
 
-source /projects/uoo00032/Resources/bin/baserefs.sh
+source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
  FILES=${1}
 OUTPUT=${2}
@@ -43,8 +43,10 @@ module load ${MOD_JAVA}
 CMD="$(which srun) $(which java) ${JAVA_ARGS} -cp $GATK ${GATK_ARGS} ${mergeList} -out ${JOB_TEMP_DIR}/${OUTPUT}"
 echo "$HEADER ${CMD}" | tee -a commands.txt
 
-${CMD}
-if cmdFailed; then exit 1; fi
+if ! ${CMD}; then
+	cmdFailed
+	exit 1
+fi
 
 # Move output to final location
 if ! finalOut; then exit 1; fi

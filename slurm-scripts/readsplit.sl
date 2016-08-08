@@ -1,21 +1,29 @@
 #!/bin/bash
 #SBATCH --account uoo00032
-#SBATCH --time=05:00:00
+#SBATCH --time=02:30:00
 #SBATCH --mem-per-cpu=2048
 #SBATCH --cpus-per-task=8
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
 #SBATCH --mail-type=FAIL
 #SBATCH --constraint=avx
+#SBATCH --array=1-2
 #SBATCH --error=slurm/RS_%A_%a.out
 #SBATCH --output=slurm/RS_%A_%a.out
 
-source /projects/uoo00032/Resources/bin/baserefs.sh
+source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
-SAMPLE=${1}
+ SAMPLE=${1}
 READNUM=${SLURM_ARRAY_TASK_ID}
  
 [ $READNUM -eq 1 ] && INPUT=${2} || INPUT=${3}
-  
+
+ALIGN_ARRAY=${4}
+ SORT_ARRAY=${5}
+
+# Set entire Alignment Array dependency to this job's success.
+# check_blocks script will release individual array elements, then purge the rest once BLOCK and NEXT match.
+scontrol update JobID=$ALIGN_ARRAY StartTime=now Dependency=afterok:$SLURM_ARRAY_JOB_ID
+
 HEADER="RS"
 
 echo "$HEADER: R${READNUM} ${INPUT}"
@@ -53,40 +61,45 @@ function splitByReadGroupAndCompress {
 		-v maxDelta="$FASTQ_MAXDIFF" \
 		-v splitPoint="$FASTQ_MAXREAD" \
 		-v compCmd="$ZIP_CMD" \
+		-v alignArray="$ALIGN_ARRAY" \
+		-v sortArray="$SORT_ARRAY" \
 		-v pBin="$PBIN" \
 		'
 		BEGIN{
+			curBlock=0
 			blockCount=0
-			curBlock=sprintf("%0"zeroPad"d", blockCount)
-			if (system("[ -e blocks/*_"readNumber"_"curBlock".fastq.gz.done ]") == 0) {
+			padBlock=sprintf("%0"zeroPad"d", curBlock)
+			if (system("[ -e blocks/*_"readNumber"_"padBlock".fastq.gz.done ]") == 0) {
 				# a blocks/..._Rn_00000.fastq.gz.done file exists so skip this block
 				writeBlock=0
-				print outHeader": Skipping block "curBlock" as it is already completed!"
+				print outHeader": Skipping block "padBlock" as it is already completed!"
 			} else {
 				writeBlock=1
-				print outHeader": Block "curBlock" does not exist yet. Writing..."
+				print outHeader": Block "padBlock" does not exist yet. Writing..."
 			}
 		}
 		NR%4==1{
 			if ( ++readsProcessed%splitPoint == 0 ) {	# Multiple of splitPoint, increment files.
 				blockCount++
+				padBlockCount=sprintf("%0"zeroPad"d", blockCount)
 				if (writeBlock) {
 					close (outStream)
 					system("touch "outFile".done")
-					print outHeader": Block "curBlock" finished at "readsProcessed" reads. Starting "sprintf("%0"zeroPad"d", blockCount)
+					print outHeader": Block "curBlock" finished at "readsProcessed" reads. Starting "padBlockCount
 				} else {
-					print outHeader": Block "curBlock" already written. Moving on to "sprintf("%0"zeroPad"d", blockCount)
+					print outHeader": Block "curBlock" already written. Moving on to "padBlockCount
 				}
 				
 				# Check if we are writing blocks or if we are not writing blocks then if read is 1, check for an alignment run.
 				if (writeBlock || readNumber=="R1") {
 					# Spawn alignment if the next block in the sequence exists for both reads.
-					system("sleep 1s; "pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "sprintf("%0"zeroPad"d", blockCount))
+					system("sleep 1s; "pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "blockCount" "alignArray" "sortArray)
 				}
 				
 				# Update current block number
-				curBlock=sprintf("%0"zeroPad"d", blockCount)
-				outFile="blocks/"prefix"_"readNumber"_"curBlock".fastq.gz"
+				curBlock=blockCount
+				padBlock=sprintf("%0"zeroPad"d", curBlock)
+				outFile="blocks/"prefix"_"readNumber"_"padBlock".fastq.gz"
 				
 				if (system("[ -e "outFile".done ]") == 0) {
 					# The new outfile.done already exists! Skip this block
@@ -120,7 +133,7 @@ function splitByReadGroupAndCompress {
 			}
 			old_prefix=prefix
 			
-			outFile="blocks/"prefix"_"readNumber"_"curBlock".fastq.gz"
+			outFile="blocks/"prefix"_"readNumber"_"padBlock".fastq.gz"
 			
 			outStream=compCmd" > "outFile
 			
@@ -142,7 +155,7 @@ function splitByReadGroupAndCompress {
 				print outHeader": Block "blockCount" already exists with "readsProcessed" reads."
 			}
 			
-			system(pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "curBlock)
+			system(pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "curBlock" "alignArray" "sortArray)
 		}
 	'; then
 		exit 1
@@ -161,8 +174,10 @@ echo "$HEADER: Best index is [${bestIndex}]"
 
 mkdir -p blocks
 
-splitByReadGroupAndCompress
-if cmdFailed; then exit 1; fi
+if ! splitByReadGroupAndCompress; then
+	cmdFailed
+	exit 1
+fi
 
 #rm ${INPUT} && echo "$HEADER: Purged input file!"
 

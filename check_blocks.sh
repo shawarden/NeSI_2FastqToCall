@@ -1,15 +1,20 @@
 #!/bin/bash
 
-source /projects/uoo00032/Resources/bin/baserefs.sh
+source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
    SAMPLE=${1}
 READGROUP=${2}
   READNUM=${3}
     BLOCK=${4}
      NEXT=${5}
+ ALIGNARR=${6}
+  SORTARR=${7}
+  
+ZPADBLOCK=$(printf "%0${FASTQ_MAXZPAD}d" $BLOCK)
+ZPADNEXT=$(printf "%0${FASTQ_MAXZPAD}d" $NEXT)
 
-curRead1File=blocks/${READGROUP}_R1_${BLOCK}.fastq.gz
-curRead2File=blocks/${READGROUP}_R2_${BLOCK}.fastq.gz
+curRead1File=blocks/${READGROUP}_R1_${ZPADBLOCK}.fastq.gz
+curRead2File=blocks/${READGROUP}_R2_${ZPADBLOCK}.fastq.gz
 
 IDN=$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $1}')
 DNA=$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $2}')
@@ -18,8 +23,8 @@ RUN=$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $4}')
 PLATFORM=Genomic
 
 function spoolAlign {
-	alignOutput=aligned/${BLOCK}.bam
-	sortOutput=sorted/${BLOCK}.bam
+	alignOutput=aligned/${ZPADBLOCK}.bam
+	sortOutput=sorted/${ZPADBLOCK}.bam
 	
 	mkdir -p $(dirname ${alignOutput})
 	mkdir -p $(dirname ${sortOutput})
@@ -27,12 +32,14 @@ function spoolAlign {
 	printf "SA: Alignment "
 	
 	if [ ! -e ${alignOutput}.done ]; then
-		DEP_PA=$(sbatch -J PA_${SAMPLE}_${BLOCK} ${SLSBIN}/align.sl ${SAMPLE} ${READGROUP} ${BLOCK} ${alignOutput} | awk '{print $4}')
+		#DEP_PA=$(sbatch -J PA_${SAMPLE}_${ZPADBLOCK} ${SLSBIN}/align.sl ${SAMPLE} ${READGROUP} ${ZPADBLOCK} ${alignOutput} | awk '{print $4}')
+		# Remove start delay on this job as the inputs should now exist!
+		scontrol update JobId=${ALIGNARR}_${BLOCK} StartTime=now Dependency=
 		if [ $? -ne 0 ]; then
 			printf "FAILED!\n"
 			exit 1
 		else
-			printf "%d " ${DEP_PA}
+			printf "%s " ${ALIGNARR}_${BLOCK}
 		fi
 	else
 		printf "done "
@@ -41,12 +48,14 @@ function spoolAlign {
 	printf "%s " "-> SortSAM"
 	
 	if [ ! -e ${sortOutput}.done ]; then
-		DEP_SS=$(sbatch -J SS_${SAMPLE}_${BLOCK} $(depCheck ${DEP_PA}) ${SLSBIN}/sortsam.sl ${SAMPLE} ${alignOutput} ${sortOutput} | awk '{print $4}')
-		if [ $? -ne 0 ] || [ "$DEP_SS" == "" ]; then
+		#DEP_SS=$(sbatch -J SS_${SAMPLE}_${ZPADBLOCK} $(depCheck ${DEP_PA}) ${SLSBIN}/sortsam.sl ${SAMPLE} ${alignOutput} ${sortOutput} | awk '{print $4}')
+		# Set this element to be dependent on alignments.
+		scontrol update JobId=${SORTARR}_${BLOCK} Dependency=${ALIGNARR}_${BLOCK}
+		if [ $? -ne 0 ]; then
 			printf "FAILED!\n"
 			exit 1
 		else
-			printf "%d " ${DEP_SS}
+			printf "%s " ${SORTARR}_${BLOCK}
 		fi
 	else
 		printf "done "
@@ -57,7 +66,7 @@ function spoolAlign {
 	# Loop though number of contigs in reference sequence.
 	# Build list of non-completed contigs blocks.
 	for i in $(seq 1 ${NUMCONTIGS}); do
-		splitOutput=split/${CONTIGA[$i]}_${BLOCK}.bam
+		splitOutput=split/${CONTIGA[$i]}_${ZPADBLOCK}.bam
 		mkdir -p $(dirname $splitOutput)
 		
 		if [ ! -e ${splitOutput}.done ]; then
@@ -71,7 +80,7 @@ function spoolAlign {
 	if [ "$splitArray" != "" ]; then
 		# Split elements defined!
 		
-		DEP_CS=$(sbatch -J CS_${SAMPLE}_${BLOCK} -a $splitArray $(depCheck ${DEP_SS}) ${SLSBIN}/contigsplit.sl ${sortOutput} ${BLOCK} | awk '{print $4}')
+		DEP_CS=$(sbatch -J CS_${SAMPLE}_${BLOCK} -a $splitArray $(depCheck ${SORTARR}_${ZPADBLOCK}) ${SLSBIN}/contigsplit.sl ${sortOutput} ${BLOCK} | awk '{print $4}')
 		if [ $? -ne 0 ] || [ "$DEP_CS" == "" ]; then
 			printf "FAILED!\n"
 			exit 1
@@ -88,7 +97,15 @@ function spoolAlign {
 	printf "\n"
 	
 	if [ "$BLOCK" == "$NEXT" ]; then	# This is the final chunk so we can spool up the next step
-		echo "CB: Last split so spool up block merging."
+		echo "CB: Last split."
+		echo "CB: Purging excess Align and Sort array elements frmo $NEXT to 999!"
+		purgeList="[${NEXT}_999]"
+		
+		# Purge extra align and sort array elements.
+		scancel ${ALIGNARR}_${purgeList} ${SORTARR}_${purgeList} && echo "CB: Purged ${ALIGNARR}_${purgeList} and ${SORTARR}_${purgeList}"
+		
+		# Spool second segment.
+		echo "CB: Spooling merge segement!"
 		spoolMerge
 	fi
 }

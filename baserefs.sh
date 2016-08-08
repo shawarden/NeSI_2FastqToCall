@@ -13,7 +13,8 @@ set -o pipefail
 export      PROJECT=/projects/uoo00032
 export    RESOURCES=${PROJECT}/Resources
 export    PLATFORMS=${RESOURCES}/Capture_Platforms/GRCh37
-export         PBIN=${RESOURCES}/bin
+export          BIN=${RESOURCES}/bin
+export         PBIN=${BIN}/NeSI_2FastqToCall
 export       SLSBIN=${PBIN}/slurm-scripts
 export DESCRIPTIONS=${RESOURCES}/FastQdescriptions.txt
 export       FASTQS=${PROJECT}/fastqfiles
@@ -25,19 +26,19 @@ export       COMMON=${RESOURCES}/Hapmap3_3commonvariants.vcf
 export          REF=${BUNDLE}/human_g1k_v37
 export         REFA=${REF}.fasta
 export         REFD=${REF}.dict
-export JOB_TEMP_DIR=${TMPDIR}	#system defined temp dir. /tmp/jobs/$SLURM_JOB_USER/$SLURM_JOB_ID
+export JOB_TEMP_DIR=$([ "${TMPDIR}" != "" ] && echo "${TMPDIR}" || echo "${PROJECT}/.tmp")	#system defined temp dir. /tmp/jobs/$SLURM_JOB_USER/$SLURM_JOB_ID
 
-export      BWA=${RESOURCES}/bwa-0.7.15/bwa
-export   PICARD=${RESOURCES}/picard-tools-2.5.0/picard.jar
-export SAMTOOLS=${RESOURCES}/samtools-1.3.1/samtools
-export     GATK=${RESOURCES}/GenomeAnalysisTK-nightly-2016-07-22-g8923599/GenomeAnalysisTK.jar
+export      BWA=${BIN}/bwa-0.7.15/bwa
+export   PICARD=${BIN}/picard-tools-2.5.0/picard.jar
+export SAMTOOLS=${BIN}/samtools-1.3.1/samtools
+export     GATK=${BIN}/GenomeAnalysisTK-nightly-2016-07-22-g8923599/GenomeAnalysisTK.jar
 
 ####################
 # Modules versions #
 ####################
 
-export     MOD_ZLIB="zlib"
-export     MOD_JAVA="Java/1.8.0_5"
+export MOD_ZLIB="zlib"
+export MOD_JAVA="Java"
 
 ###########
 # Contigs #
@@ -255,11 +256,7 @@ export -f finalOut
 # Check if command filed
 ####################
 function cmdFailed {
-	exitCode=$?
-	if [ $exitCode -ne 0 ]; then
-		echo "$HEADER: [$SLURM_JOB_NAME:$SLURM_JOBID:$SLURM_ARRAY_TASK_ID] failed with $exitCode!"
-		exit 1
-	fi
+	echo "$HEADER: [$SLURM_JOB_NAME:$SLURM_JOBID:$SLURM_ARRAY_TASK_ID] failed with $?!"
 }
 export -f cmdFailed
 

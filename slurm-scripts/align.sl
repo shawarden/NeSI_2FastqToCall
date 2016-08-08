@@ -9,7 +9,7 @@
 #SBATCH --error=slurm/PA_%j.out
 #SBATCH --output=slurm/PA_%j.out
 
-source /projects/uoo00032/Resources/bin/baserefs.sh
+source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
    SAMPLE=${1}
 READGROUP=${2}
@@ -25,12 +25,8 @@ echo "$HEADER: ${READGROUP} ${READ1} ${READ2} to ${OUTPUT}"
 date
 
 # Make sure input and target folders exists and that output file does not!
-INPUT="$READ1"
-if ! inFile; then exit 1; fi
-
-INPUT="$READ2"
-if ! inFile; then exit 1; fi
-
+if ! (INPUT=${READ1}; inFile); then exit 1
+if ! (INPUT=${READ2}; inFile); then exit 1
 if ! outDirs; then exit 1; fi
 if ! outFile; then exit 1; fi
 
@@ -47,10 +43,13 @@ RG_PU="PU:${FLOW_CELL}.${CELL_LANE}"
 RG_LB="LB:${SAMPLE}"
 RG_SM="SM:$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $1}')"
 
-echo "$HEADER: ${BWA} mem -M -t ${SLURM_JOB_CPUS_PER_NODE} -R @RG'\t'$RG_ID'\t'$RG_PL'\t'$RG_PU'\t'$RG_LB'\t'$RG_SM $REF $READ1 $READ2 | ${SAMTOOLS} view -bh - > ${OUTPUT}" | tee -a ../commands.txt
+CMD="${BWA} mem -M -t ${SLURM_JOB_CPUS_PER_NODE} -R @RG'\t'$RG_ID'\t'$RG_PL'\t'$RG_PU'\t'$RG_LB'\t'$RG_SM $REF $READ1 $READ2 | ${SAMTOOLS} view -bh - > ${JOB_TEMP_DIR}/${OUTPUT}"
+echo "$HEADER: ${CMD}" | tee -a ../commands.txt
 
-${BWA} mem -M -t ${SLURM_JOB_CPUS_PER_NODE} -R @RG'\t'$RG_ID'\t'$RG_PL'\t'$RG_PU'\t'$RG_LB'\t'$RG_SM $REF $READ1 $READ2 | ${SAMTOOLS} view -bh - > ${JOB_TEMP_DIR}/${OUTPUT}
-if cmdFailed; then exit 1; fi
+if ! eval ${CMD}; then
+	cmdFailed
+	exit 1
+fi
 
 # Move output to final location
 if ! finalOut; then exit 1; fi

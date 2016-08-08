@@ -8,7 +8,7 @@
 #SBATCH --error=slurm/TF_%j.out
 #SBATCH --output=slurm/TF_%j.out
 
-source /projects/uoo00032/Resources/bin/baserefs.sh
+source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
    IDN=${1}
  INPUT=${2}
@@ -46,7 +46,9 @@ date
 CMD="ssh globus transfer --encrypt --perf-cc 4 --perf-p 8 --label \"${LABEL}\" -- nz#uoa/$(pwd)/${INPUT} nesi#otago-dtn01/${OUTPUT}"
 echo "$HEADER: ${CMD}" | tee -a commands.txt
 
-${CMD}
-if cmdFailed; then exit 1; fi
+if ! ${CMD}; then
+	cmdFailed
+	exit 1
+fi
 
 touch ${LABEL}.transfer.done

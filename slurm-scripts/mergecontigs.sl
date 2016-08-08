@@ -9,7 +9,7 @@
 #SBATCH --error=slurm/MC_%A_%a.out
 #SBATCH --output=slurm/MC_%A_%a.out
 
-source /projects/uoo00032/Resources/bin/baserefs.sh
+source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
 CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
 OUTPUT=merged/${CONTIG}.bam
@@ -32,11 +32,9 @@ fi
 
 mergeList=""
 for INPUT in ${contigMerBlocks}; do
-	if [ -e $INPUT ]; then
+	if inFile; then
 		mergeList="${mergeList} I=${INPUT}"
 	else
-		echo "$HEADER: Input file $INPUT doesn't exist!"
-#		scriptFailed
 		exit 1
 	fi
 done
@@ -62,8 +60,10 @@ module load ${MOD_JAVA}
 CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} MergeSamFiles ${PIC_ARGS} ${mergeList} O=${JOB_TEMP_DIR}/${OUTPUT}"
 echo "$HEADER: ${CMD}" | tee -a commands.txt
 
-${CMD}
-if cmdFailed; then exit 1; fi
+if ! ${CMD}; then
+	cmdFailed
+	exit 1
+fi
 
 # Move output to final location
 if ! finalOut; then exit 1; fi

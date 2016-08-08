@@ -6,14 +6,17 @@
 #SBATCH --mail-user=sam.hawarden@otago.ac.nz
 #SBATCH --mail-type=FAIL
 #SBATCH --constraint=avx
-#SBATCH --error=slurm/SS_%j.out
-#SBATCH --output=slurm/SS_%j.out
+#SBATCH --array=0
+#SBATCH --error=slurm/SS_%A_%a.out
+#SBATCH --output=slurm/SS_%A_%a.out
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
 SAMPLE=${1}
- INPUT=${2}
-OUTPUT=${3}
+
+ BLOCK=$(printf "%0${FASTQ_MAXZPAD}d" $SLURM_ARRAY_TASK_ID)
+ INPUT=aligned/${BLOCK}.bam
+OUTPUT=sorted/${BLOCK}.bam
 
 HEADER="SS"
 

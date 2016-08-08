@@ -19,6 +19,11 @@
 
 # Update history
 
+## 2016-08-09
+
+### Fixed
+- Alignment array not collecting read-group header info for file-name pickup: cat block/readgroup.file in job script.
+
 
 ## 2016-08-08
 

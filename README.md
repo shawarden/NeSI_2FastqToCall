@@ -23,6 +23,7 @@
 
 ### Changed
 - SortSam runtime reduced from 3 hours to 1 hour as highest seen runtime is 45 minutes.
+- Replaced Align and Sort with array variant.
 
 ### Fixed
 - Alignment array not collecting read-group header info for file-name pickup: cat block/readgroup.file in job script.

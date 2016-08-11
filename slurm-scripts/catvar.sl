@@ -1,13 +1,11 @@
 #!/bin/bash
-#SBATCH --account uoo00032
-#SBATCH --time=03:00:00
-#SBATCH --mem-per-cpu=16384
-#SBATCH --cpus-per-task=1
-#SBATCH --mail-user=sam.hawarden@otago.ac.nz
-#SBATCH --mail-type=FAIL
-#SBATCH --constraint=avx
-#SBATCH --error=slurm/CV_%j.out
-#SBATCH --output=slurm/CV_%j.out
+#SBATCH --job-name		CatVariants
+#SBATCH --time			0-03:00:00
+#SBATCH --mem-per-cpu	16384
+#SBATCH --cpus-per-task	1
+#SBATCH --constraint	avx
+#SBATCH --error			slurm/CV_%j.out
+#SBATCH --output		slurm/CV_%j.out
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
@@ -56,7 +54,7 @@ rm $FILES && echo "$HEADER: Purged input files!"
 touch ${OUTPUT}.done
 
 # Start transfers for variants file and index.
-sbatch -J TV_${IDN} ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}
-sbatch -J TVI_${IDN} ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}.tbi
+${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}
+${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}.tbi
 
 storeMetrics

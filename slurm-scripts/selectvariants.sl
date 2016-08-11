@@ -1,13 +1,12 @@
 #!/bin/bash
-#SBATCH --account uoo00032
-#SBATCH --time 06:00:00
-#SBATCH --mem-per-cpu=4096
-#SBATCH --cpus-per-task=8
-#SBATCH --mail-user=sam.hawarden@otago.ac.nz
-#SBATCH --mail-type=FAIL
-#SBATCH --constraint=avx
-#SBATCH --error=slurm/SV_%j.out
-#SBATCH --output=slurm/SV_%j.out
+#SBATCH --account		uoo00032
+#SBATCH --job-name		SelectVariants
+#SBATCH --time			0-06:00:00
+#SBATCH --mem-per-cpu	4096
+#SBATCH --cpus-per-task	8
+#SBATCH --constraint	avx
+#SBATCH --error			slurm/SV_%j.out
+#SBATCH --output		slurm/SV_%j.out
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 

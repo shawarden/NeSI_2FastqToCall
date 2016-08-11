@@ -1,13 +1,13 @@
 #!/bin/bash
-#SBATCH --account uoo00032
-#SBATCH --time=03:00:00
-#SBATCH --mem-per-cpu=4092
-#SBATCH --cpus-per-task=4
-#SBATCH --mail-user=sam.hawarden@otago.ac.nz
-#SBATCH --mail-type=FAIL
-#SBATCH --constraint=avx
-#SBATCH --error=slurm/PR_%A_%a.out
-#SBATCH --output=slurm/PR_%A_%a.out
+#SBATCH --account		uoo00032
+#SBATCH --job-name		PrintReads
+#SBATCH --time			0-03:00:00
+#SBATCH --mem-per-cpu	4092
+#SBATCH --cpus-per-task	8
+#SBATCH --constraint	avx
+#SBATCH --array			1-84
+#SBATCH --error			slurm/PR_%A_%a.out
+#SBATCH --output		slurm/PR_%A_%a.out
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 

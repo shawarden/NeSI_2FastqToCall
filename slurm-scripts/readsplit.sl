@@ -1,14 +1,13 @@
 #!/bin/bash
-#SBATCH --account uoo00032
-#SBATCH --time=02:30:00
-#SBATCH --mem-per-cpu=2048
-#SBATCH --cpus-per-task=8
-#SBATCH --mail-user=sam.hawarden@otago.ac.nz
-#SBATCH --mail-type=FAIL
-#SBATCH --constraint=avx
-#SBATCH --array=1-2
-#SBATCH --error=slurm/RS_%A_%a.out
-#SBATCH --output=slurm/RS_%A_%a.out
+#SBATCH --account		uoo00032
+#SBATCH --job-name		ReadSplit
+#SBATCH --time			0-02:30:00
+#SBATCH --mem-per-cpu	2048
+#SBATCH --cpus-per-task	8
+#SBATCH --constraint	avx
+#SBATCH --array			1,2
+#SBATCH --error			slurm/RS_%A_%a.out
+#SBATCH --output		slurm/RS_%A_%a.out
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
@@ -85,9 +84,9 @@ function splitByReadGroupAndCompress {
 				if (writeBlock) {
 					close (outStream)
 					system("touch "outFile".done")
-					print outHeader": Block "curBlock" finished at "readsProcessed" reads. Starting "padBlockCount
+					print outHeader": Block "padBlock" finished at "readsProcessed" reads. Starting "padBlockCount
 				} else {
-					print outHeader": Block "curBlock" already written. Moving on to "padBlockCount
+					print outHeader": Block "padBlock" already written. Moving on to "padBlockCount
 				}
 				
 				# Check if we are writing blocks or if we are not writing blocks then if read is 1, check for an alignment run.
@@ -103,7 +102,7 @@ function splitByReadGroupAndCompress {
 				
 				if (system("[ -e "outFile".done ]") == 0) {
 					# The new outfile.done already exists! Skip this block
-					print outHeader": Skipping block "curBlock" as it is already completed!"
+					print outHeader": Skipping block "padBlock" as it is already completed!"
 					writeBlock=0
 				} else {
 					writeBlock=1

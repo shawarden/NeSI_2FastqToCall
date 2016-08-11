@@ -61,11 +61,97 @@ export TRUEY="Y:2649521-59034050"
 # FastQ Split Data management #
 ###############################
 
-export FASTQ_MAXREAD=10000000	# How many reads per block.
+export FASTQ_MAXREAD=15000000	# How many reads per block.
 export FASTQ_MAXSCAN=10000		# How many lines to check for best index.
 export FASTQ_MAXDIFF=2			# Maximum index variation before new index is created.
 export FASTQ_MAXJOBS=1000		# Maximum number of alignment & sort array elements.
+export FASTQ_MAXJOBZ=$(($FASTQ_MAXJOBS - 1))	# Maximum number of alignment & sort array elements starting from 0.
 export FASTQ_MAXZPAD=${#FASTQ_MAXJOBS}	# Number of characters to pad to blocks.
+
+export MAX_JOB_RATE=30			# Minimum number of seconds between job submissions.
+
+
+##########################
+# Dispatch function data #
+##########################
+declare -A SB
+SB[ACCOUNT]=uoo00032
+SB[MAILUSER]=sam.hawarden@otago.ac.nz
+SB[MAILTYPE]=FAIL
+
+# MWT: Max Wall-Times
+# MPC: Memory per Cores
+# CPT: Cores per Task
+
+SB[RS,MWT]=0-02:30:00
+SB[RS,MPC]=2048
+SB[RS,CPT]=8
+ 
+SB[PA,MWT]=0-01:30:00
+SB[PA,MPC]=2048
+SB[PA,CPT]=8
+
+SB[SS,MWT]=0-01:30:00
+SB[SS,MPC]=4096
+SB[SS,CPT]=4
+
+SB[CS,MWT]=0-00:15:00
+SB[CS,MPC]=2048
+SB[CS,CPT]=2
+
+SB[MC,MWT]=0-02:00:00
+SB[MC,MPC]=4096
+SB[MC,CPT]=4
+
+SB[MD,MWT]=0-03:00:00
+SB[MD,MPC]=8192
+SB[MD,CPT]=4
+
+SB[BR,MWT]=0-02:00:00
+SB[BR,MPC]=4096
+SB[BR,CPT]=8
+
+SB[PR,MWT]=0-03:00:00
+SB[PR,MPC]=4092
+SB[PR,CPT]=8
+
+SB[DC,MWT]=0-00:30:00
+SB[DC,MPC]=2048
+SB[DC,CPT]=4
+
+SB[GD,MWT]=0-00:10:00
+SB[GD,MPC]=512
+SB[GD,CPT]=1
+
+SB[HC,MWT]=0-03:00:00
+SB[HC,MPC]=4096
+SB[HC,CPT]=8
+
+SB[CR,MWT]=0-01:00:00
+SB[CR,MPC]=4096
+SB[CR,CPT]=1
+
+SB[RI,MWT]=0-01:30:00
+SB[RI,MPC]=4096
+SB[RI,CPT]=1
+
+SB[CV,MWT]=0-03:00:00
+SB[CV,MPC]=16384
+SB[CV,CPT]=1
+
+SB[FP,MWT]=0-06:00:00
+SB[FP,MPC]=4096
+SB[FP,CPT]=8
+
+SB[SV,MWT]=0-06:00:00
+SB[SV,MPC]=4096
+SB[SV,CPT]=8
+
+SB[TF,MWT]=0-00:20:00
+SB[TF,MPC]=512
+SB[TF,CPT]=1
+
+export SB
 
 ###########################
 # Java memory calculation #
@@ -75,7 +161,7 @@ export FASTQ_MAXZPAD=${#FASTQ_MAXJOBS}	# Number of characters to pad to blocks.
 [ -z $SLURM_MEM_PER_CPU ] && SLURM_MEM_PER_CPU=4096
 [ -z $SLURM_JOB_CPUS_PER_NODE ] && SLURM_JOB_CPUS_PER_NODE=4
 
-export JAVA_MEM_GB=$((($SLURM_MEM_PER_CPU * $SLURM_JOB_CPUS_PER_NODE)/1024))
+export JAVA_MEM_GB=$(((($SLURM_MEM_PER_CPU * $SLURM_JOB_CPUS_PER_NODE)/1024)-2))
 export   JAVA_ARGS="-Xmx${JAVA_MEM_GB}g -Djava.io.tmpdir=${JOB_TEMP_DIR}"
 export MAX_RECORDS=$((${JAVA_MEM_GB} * 200000)) #~100bp picard records in memory.
 
@@ -245,7 +331,7 @@ export inFile
 # Move temp output to final output locations
 ###################
 function finalOut {
-	if ! mv ${JOB_TEMP_DIR}/${OUTPUT} ${OUTPUT}; then
+	if ! mv ${JOB_TEMP_DIR}/${OUTPUT%.*}* $(dirname ${OUTPUT}); then
 		echo "$HEADER: Failed to move ${JOB_TEMP_DIR}/${OUTPUT} to ${PWD}/${OUTPUT}!"
 		exit 1
 	fi
@@ -270,3 +356,51 @@ function depCheck {
 	fi
 }
 export -f depCheck
+
+###################
+# Gets job category data
+###################
+function dispatch {
+	jobWait
+	JOBCAT=${1}
+	echo -ne "--account ${SB[ACCOUNT]} --mail-user=${SB[MAILUSER]} --mail-type=${SB[MAILTYPE]} --time ${SB[${JOBCAT},MWT]} --mem-per-cpu=${SB[${JOBCAT},MPC]} --cpus-per-task ${SB[${JOBCAT},CPT]}"
+}
+export -f dispatch
+
+###################
+# Echo job stats to log file
+###################
+function jobStats {
+	echo -e "$HEADER:\tMax Walltime:     ${SB[$HEADER,MWT]}"
+	echo -e "\tMemory-Per-Core: ${SB[$HEADER,MPC]}"
+	echo -e "\tCores-Per-Task:  ${SB[$HEADER,CPT]}"
+}
+export -f jobStats
+
+##################
+# Delays job submission based on project's previous submitted job.
+##################
+function jobWait {
+	timeNow=$(date +%s)
+	if [ -e ${PROJECT}/submitted.log ]; then
+		lastJob=$(cat ${PROJECT}/submitted.log)
+		if [ "$lastJob" != "" ]; then
+			>&2 printf " "
+			while [ $(($timeNow - $lastJob)) -lt $MAX_JOB_RATE ]; do
+				case "$TICKER" in
+					"|") TICKER="/" ;;
+					"/") TICKER="-" ;;
+					"-") TICKER="\\" ;;
+					*) TICKER="|" ;;
+				esac
+				
+				>&2 printf "\b%s" "$TICKER"
+				
+				sleep 0.25s
+				timeNow=$(date +%s)
+			done
+			>&2 printf "\b"
+		fi
+	fi
+	echo $timeNow > ${PROJECT}/submitted.log
+}

@@ -1,12 +1,11 @@
 #!/bin/bash
-#SBATCH --account uoo00032
-#SBATCH --time=00:20:00
-#SBATCH --mem-per-cpu=512
-#SBATCH --cpus-per-task=1
-#SBATCH --mail-user=sam.hawarden@otago.ac.nz
-#SBATCH --mail-type=FAIL
-#SBATCH --error=slurm/TF_%j.out
-#SBATCH --output=slurm/TF_%j.out
+#SBATCH --account		uoo00032
+#SBATCH --job-name		TransferFile
+#SBATCH --time			0-00:20:00
+#SBATCH --mem-per-cpu	512
+#SBATCH --cpus-per-task	1
+#SBATCH --error			slurm/TF_%j.out
+#SBATCH --output		slurm/TF_%j.out
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 

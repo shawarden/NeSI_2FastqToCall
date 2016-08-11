@@ -1,14 +1,12 @@
 #!/bin/bash
-#SBATCH --account uoo00032
-#SBATCH --time=00:45:00
-#SBATCH --mem-per-cpu=2048
-#SBATCH --cpus-per-task=8
-#SBATCH --mail-user=sam.hawarden@otago.ac.nz
-#SBATCH --mail-type=FAIL
-#SBATCH --constraint=avx
-#SBATCH --array=0
-#SBATCH --error=slurm/PA_%A_%a.out
-#SBATCH --output=slurm/PA_%A_%a.out
+#SBATCH --job-name		PrimaryAlignment
+#SBATCH --time			0-00:45:00
+#SBATCH --mem-per-cpu	2048
+#SBATCH --cpus-per-task	8
+#SBATCH --constraint	avx
+#SBATCH --array			0-999
+#SBATCH --error			slurm/PA_%A_%a.out
+#SBATCH --output		slurm/PA_%A_%a.out
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
@@ -26,9 +24,10 @@ READ1=blocks/${READGROUP}_R1_${BLOCK}.fastq.gz
 READ2=blocks/${READGROUP}_R2_${BLOCK}.fastq.gz
 
 echo "$HEADER: $READGROUP $BLOCK $READ1 $READ2 -> $OUTPUT"
+jobStats
 date
 
-if [ $(cat "$READGROUP" | wc -w) -gt 1 ]; then
+if [ $(echo "$READGROUP" | wc -w) -gt 1 ]; then
 	echo "$HEADER: Too many read-groups!"
 	exit 1
 fi

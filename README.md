@@ -19,6 +19,32 @@
 
 # Update history
 
+
+## 2016-08-11
+
+### Changed
+- Moved file transfer script into main script body to prevent un-needed extra job submissions. The transfers are handed off to Globus so take virtually no time. This happens after the file has been moved to the storage folder so if transfer fails, you don't have to start from scratch.
+- Changed in-script --array definition to more accurately reflect their general/ideal submission state. The array is still generated dynamically by the submission script.
+
+### Fixed
+- CheckBlock reading 1 block to far when restarted a from a point after ReadSplit had completed: blocks - 1 cuz they start at 0
+
+### Added
+- Submission delay mechanism so we don't submit a job within a certain amount of time of the previous.
+
+### Removed
+- File transfer scripts from main check_block script.
+
+
+## 2016-08-10
+
+### Changed
+- Increased ReadSplit block size and run-times by 50% to try and fit under NeSI submission rate limits.
+
+### Added
+- Global job category resource definitions.
+- Delay on script re-start to reduce failures due to job submission rate limit.
+
 ## 2016-08-09
 
 ### Changed
@@ -27,7 +53,8 @@
 
 ### Fixed
 - Alignment array not collecting read-group header info for file-name pickup: cat block/readgroup.file in job script.
-
+- Minimum meory being exceeded in java VM: specified memory is 1gb less than allocated.
+- Sort array not copying .bai file to storage area after job completion.
 
 ## 2016-08-08
 

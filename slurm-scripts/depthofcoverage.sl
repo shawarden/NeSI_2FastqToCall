@@ -1,13 +1,12 @@
 #!/bin/bash
-#SBATCH --account uoo00032
-#SBATCH --time=00:30:00
-#SBATCH --mem-per-cpu=2048
-#SBATCH --cpus-per-task=4
-#SBATCH --mail-user=sam.hawarden@otago.ac.nz
-#SBATCH --mail-type=FAIL
-#SBATCH --constraint=avx
-#SBATCH --error=slurm/DC_%A_%a.out
-#SBATCH --output=slurm/DC_%A_%a.out
+#SBATCH --job-name		DepthOfCoverage
+#SBATCH --time			0-00:30:00
+#SBATCH --mem-per-cpu	2048
+#SBATCH --cpus-per-task	4
+#SBATCH --constraint	avx
+#SBATCH --array			1-84
+#SBATCH --error			slurm/DC_%A_%a.out
+#SBATCH --output		slurm/DC_%A_%a.out
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 

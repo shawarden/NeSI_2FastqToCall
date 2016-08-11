@@ -29,7 +29,7 @@ platformBED=${PLATFORMS}/${PLATFORM}.bed
   genderSRC=${genderBED%.bed}.sh
   
    CUR_PATH=$(pwd)
-if [ "$LOCATION" == "" ] || [ "$LOCATION" == "scratch" ]; then
+if [ "$LOCATION" == "scratch" ]; then
 	WORK_PATH=/scratch/jobs/$USER
 else
 	WORK_PATH=/projects/uoo00032/Alignments
@@ -38,7 +38,6 @@ fi
 
 SAMPLE_PATH=${WORK_PATH}/${IDN}/${DNA}_${LIB}_${RUN}
 
-mkdir -p ${SAMPLE_PATH}
 mkdir -p ${SAMPLE_PATH}/slurm
 
 date '+%Y%m%d_%H%M%S' > ${WORK_PATH}/${IDN}/starttime.txt
@@ -51,26 +50,45 @@ fi
 
 cd ${SAMPLE_PATH}
 
+alignArray=""
+sortArray=""
+
+for i in $(seq 0 $FASTQ_MAXJOBZ); do
+	curBlock=$(printf "%0${FASTQ_MAXZPAD}d" $i)
+	alignOutput=aligned/$curBlock.bam
+	sortOutput=sorted/$curBlock.bam
+	
+	if [ ! -e ${alignOutput}.done ]; then
+		# This contig block hasn't been split yet.
+		alignArray=$(appendList "$alignArray" $i ",")
+	fi
+	
+	if [ ! -e ${sortOutput}.done ]; then
+		# This contig block hasn't been split yet.
+		sortArray=$(appendList "$sortArray" $i ",")
+	fi
+done 
 
 # Dispatch alignemnt & sort arrays.
-# Alignemnt array doens't have an dependency yet since ReadSplit needs to know what the aligner's JobID is to update it.
+# Alignemnt array doesn't have an dependency yet since ReadSplit needs to know what the aligner's JobID is to update it.
 printf "%-9s " "Dispatch (Align"
-DEP_PA=$(sbatch -J PA_${SAMPLE} --begin=now+10hour --array=0-999 ${SLSBIN}/align.sl ${SAMPLE} | awk '{print $4}')
+DEP_PA=$(sbatch $(dispatch "PA") -J PA_${SAMPLE} --begin=now+72hour --array=$alignArray ${SLSBIN}/align.sl ${SAMPLE} | awk '{print $4}')
 if [ $? -ne 0 ] || [ "$DEP_PA" == "" ]; then
 	printf "FAILED!"
 	exit 1
 else
-	printf "%s " "${DEP_PA}"
+	printf "%sx%-3d " "${DEP_PA}" $(splitByChar "$alignArray" "," | wc -w)
 fi
 
-# ReadSplit also needs to know Sort's JobID for the same reason.
+# Does ReadSplit needs know Sort's JobID for the same reason?
 printf "%s " "-> Sorter"
-DEP_SS=$(sbatch -J SS_${SAMPLE} $(depCheck ${DEP_PA}) --array=0-999 ${SLSBIN}/sort.sl ${SAMPLE} | awk '{print $4}')
+DEP_SS=$(sbatch $(dispatch "SS") -J SS_${SAMPLE} $(depCheck ${DEP_PA}) --array=$sortArray ${SLSBIN}/sort.sl ${SAMPLE} | awk '{print $4}')
 if [ $? -ne 0 ] || [ "$DEP_SS" == "" ]; then
 	printf "FAILED!"
 	exit 1
 else
-	printf "%s) " "${DEP_SS}"
+	tieTaskDeps "$sortArray" "$DEP_SS" "$alignArray" "$DEP_PA"
+	printf "%sx%-3d) " "${DEP_SS}" $(splitByChar "$sortArray" "," | wc -w)
 fi
 
 printf "%s " "<- Split Reads"
@@ -91,7 +109,7 @@ read1Size=$(ls -lah ${READ1} | awk '{print $5}')
 read2Size=$(ls -lah ${READ2} | awk '{print $5}')
 
 if [ "$splitReadArray" != "" ]; then
-	DEP_SR=$(sbatch -J RS_${SAMPLE}_${read1Size}_${read2Size} -a $splitReadArray ${SLSBIN}/readsplit.sl ${SAMPLE} ${READ1} ${READ2} ${DEP_PA} ${DEP_SS} | awk '{print $4}')
+	DEP_SR=$(sbatch $(dispatch "RS") -J RS_${SAMPLE}_${read1Size}_${read2Size} -a $splitReadArray ${SLSBIN}/readsplit.sl ${SAMPLE} ${READ1} ${READ2} ${DEP_PA} ${DEP_SS} | awk '{print $4}')
 	if [ $? -ne 0 ] || [ "$DEP_SR" == "" ]; then
 		printf "FAILED!\n"
 		exit 1
@@ -105,14 +123,16 @@ else
 	printf "done -> Aligning..."
 	# Both reads are done. Build read list and spool alignments.
 	READGROUP=$(cat blocks/R1_ReadGroup.txt)
-	readBlocks=$(($(find ./blocks -type f -iname "${READGROUP}_R1_*.fastq.gz.done" | wc -l) -1))
+	readBlocks=$(($(find ./blocks -type f -iname "${READGROUP}_R1_*.fastq.gz.done" | wc -l) - 1))
+	purgeList="$readBlocks-$FASTQ_MAXJOBZ"
+	scancel ${DEP_PA}_[${purgeList}] ${DEP_SS}_[${purgeList}] && echo "Purged excess alignment and sort jobs $purgeList"
 	for i in $(seq 0 ${readBlocks}); do
 		if [ $i -lt $readBlocks ]; then
 			nextBlock=$(($i + 1))
 		else
 			nextBlock=$i
 		fi
-		${PBIN}/check_blocks.sh ${SAMPLE} ${READGROUP} R1 $(printf '%05d' $i) $(printf '%05d' $nextBlock $DEP_PA $DEP_SS)
+		${PBIN}/check_blocks.sh ${SAMPLE} ${READGROUP} R1 $i $nextBlock $DEP_PA $DEP_SS
 	done
 fi
 

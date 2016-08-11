@@ -1,13 +1,10 @@
 #!/bin/bash
-#SBATCH --account uoo00032
-#SBATCH --time=00:10:00
-#SBATCH --mem-per-cpu=128
-#SBATCH --cpus-per-task=1
-#SBATCH --mail-user=sam.hawarden@otago.ac.nz
-#SBATCH --mail-type=FAIL
-# No resource contrains as this is just a batch script.
-#SBATCH --error=slurm/GD_%j.out
-#SBATCH --output=slurm/GD_%j.out
+#SBATCH --job-name		GenderDetermination
+#SBATCH --time			0-00:10:00
+#SBATCH --mem-per-cpu	512
+#SBATCH --cpus-per-task	1
+#SBATCH --error			slurm/GD_%j.out
+#SBATCH --output		slurm/GD_%j.out
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 

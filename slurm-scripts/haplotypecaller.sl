@@ -1,25 +1,20 @@
 #!/bin/bash
-#SBATCH --account uoo00032
-#SBATCH --time 03:00:00
-#SBATCH --mem-per-cpu=4096
-#SBATCH --cpus-per-task=8
-#SBATCH --mail-user=sam.hawarden@otago.ac.nz
-#SBATCH --mail-type=FAIL
-#SBATCH --constraint=avx
-#SBATCH --error=slurm/HC_%A_%a.out
-#SBATCH --output=slurm/HC_%A_%a.out
+#SBATCH --account		uoo00032
+#SBATCH --time			0-03:00:00
+#SBATCH --mem-per-cpu	4096
+#SBATCH --cpus-per-task	8
+#SBATCH --constraint	avx
+#SBATCH --array			1-84
+#SBATCH --error			slurm/HC_%A_%a.out
+#SBATCH --output		slurm/HC_%A_%a.out
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
-CONTIG=${1}
+CONTIG=$([ "$1" != "" ] && echo "$1" || echo "${CONTIGA[$SLURM_ARRAY_TASK_ID]}")
 
 HEADER="HC"
 
-if [ "${CONTIG}" == "" ]; then	# Contig not defined. X & Y subtypes.
-	CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
-fi
-
- INPUT=printreads/${CONTIG%:*}.bam	# Strip contig coordinates.
+ INPUT=printreads/${CONTIG%:*}.bam	# Strip any contig coordinates.
 OUTPUT=haplo/${CONTIG}.g.vcf.gz
 
 if [ -e coverage.sh ]; then

@@ -17,7 +17,7 @@ READNUM=${SLURM_ARRAY_TASK_ID}
 [ $READNUM -eq 1 ] && INPUT=${2} || INPUT=${3}
 
 ALIGN_ARRAY=${4}
- SORT_ARRAY=${5}
+ SORT_ARRAY=${5} 
 
 # Set entire Alignment Array dependency to this job's success.
 # check_blocks script will release individual array elements, then purge the rest once BLOCK and NEXT match.

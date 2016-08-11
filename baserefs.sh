@@ -105,13 +105,13 @@ SB[MC,CPT]=4
 
 SB[MD,MWT]=0-03:00:00
 SB[MD,MPC]=8192
-SB[MD,CPT]=4
+SB[MD,CPT]=2
 
-SB[BR,MWT]=0-02:00:00
+SB[BR,MWT]=0-01:00:00
 SB[BR,MPC]=4096
-SB[BR,CPT]=8
+SB[BR,CPT]=4
 
-SB[PR,MWT]=0-03:00:00
+SB[PR,MWT]=0-02:00:00
 SB[PR,MPC]=4092
 SB[PR,CPT]=8
 
@@ -123,7 +123,7 @@ SB[GD,MWT]=0-00:10:00
 SB[GD,MPC]=512
 SB[GD,CPT]=1
 
-SB[HC,MWT]=0-03:00:00
+SB[HC,MWT]=0-01:30:00
 SB[HC,MPC]=4096
 SB[HC,CPT]=8
 
@@ -135,7 +135,7 @@ SB[RI,MWT]=0-01:30:00
 SB[RI,MPC]=4096
 SB[RI,CPT]=1
 
-SB[CV,MWT]=0-03:00:00
+SB[CV,MWT]=0-02:00:00
 SB[CV,MPC]=16384
 SB[CV,CPT]=1
 
@@ -208,11 +208,12 @@ function storeMetrics {
 	fi
 	
 	printf \
-		"%19s %-50s %-5d %-6d %s\n" \
+		"%19s: Task %-20s running on %2d@%1.1fGHz w/%3dGB took %s\n" \
 		"$(date '+%Y-%m-%d %H:%M:%S')" \
-		${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && printf "_%s" "${CONTIGA[${SLURM_ARRAY_TASK_ID}]}") \
+		"${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne ":$SLURM_ARRAY_TASK_ID")" \
 		${SLURM_JOB_CPUS_PER_NODE} \
-		$((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU})) \
+		$(echo "$(lscpu | grep "CPU MHz" | awk '{print $3}') / 1000" | bc -l) \
+		$(((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU}) / 1024)) \
 		$(printHMS $SECONDS) | \
 		tee -a ${BACKDIR}metrics.txt >> ${HOME}/metrics.txt
 }

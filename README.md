@@ -42,7 +42,7 @@
 - Increased ReadSplit block size and run-times by 50% to try and fit under NeSI submission rate limits.
 
 ### Added
-- Global job category resource definitions.
+- Global job category resource definitions. Second attempt.
 - Delay on script re-start to reduce failures due to job submission rate limit.
 
 ## 2016-08-09

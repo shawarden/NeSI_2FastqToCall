@@ -67,7 +67,7 @@ for i in $(seq 0 $FASTQ_MAXJOBZ); do
 		# This contig block hasn't been split yet.
 		sortArray=$(appendList "$sortArray" $i ",")
 	fi
-done 
+done
 
 # Dispatch alignemnt & sort arrays.
 # Alignemnt array doesn't have an dependency yet since ReadSplit needs to know what the aligner's JobID is to update it.

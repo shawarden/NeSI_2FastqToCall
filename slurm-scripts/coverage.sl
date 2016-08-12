@@ -168,6 +168,6 @@ echo "Y_CHROMOSOMES=$yChromes" | tee -a ${OUTPUT}
 
 touch ${OUTPUT}.done
 
-sbatch -J TGD_${IDN} ${SLSBIN}/transfer.sl ${IDN} coverage.sh ${IDN}.coverage.sh
+${SLSBIN}/transfer.sl ${IDN} coverage.sh ${IDN}.coverage.sh
 
 storeMetrics

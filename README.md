@@ -20,6 +20,16 @@
 # Update history
 
 
+## 2016-08-12
+
+### Fixed
+- Printreads input validation missing a fi to close close the if.
+- Check-blocks erroneous output.
+
+### Changed
+- Metrics logging output format
+
+
 ## 2016-08-11
 
 ### Changed

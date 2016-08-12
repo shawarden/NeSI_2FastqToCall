@@ -13,7 +13,7 @@ FILES=${1}
 OUTPUT=${2}
 IDN=$(echo $SLURM_JOB_NAME | cut -d'_' -f2)
 
-BAMHEAD=$(echo ${INPUT} | awk '{print $1}')
+BAMHEAD=$(echo ${FILES} | awk '{print $1}')
 
 HEADER="CR"
 
@@ -28,7 +28,7 @@ if ! outDirs; then exit 1; fi
 if ! outFile; then exit 1; fi
 
 CMD="$(which srun) ${SAMTOOLS} cat -h ${BAMHEAD} -o ${JOB_TEMP_DIR}/${OUTPUT} ${FILES}"
-echo "$HEADER: ${CMD1}, ${CMD2}" | tee -a commands.txt
+echo "$HEADER: ${CMD}}" | tee -a commands.txt
 
 if ! ${CMD}; then
 	cmdFailed

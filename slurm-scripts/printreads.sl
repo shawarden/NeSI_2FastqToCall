@@ -11,7 +11,7 @@
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
-CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
+CONTIG=$([ "$1" != "" ] && echo -ne "$1" || echo "${CONTIGA[$SLURM_ARRAY_TASK_ID]}")
  INPUT=markdup/${CONTIG}.bam
   BQSR=baserecal/${CONTIG}.firstpass
 OUTPUT=printreads/${CONTIG}.bam
@@ -22,8 +22,8 @@ echo "$HEADER: ${INPUT} + ${BQSR} -> ${OUTPUT}"
 date
 
 # Make sure input and target folders exists and that output file does not!
-if ! inFile;  then exit 1; 
-if ! (INPUT=$(echo $BQSR); inFile); then exit 1
+if ! inFile;  then exit 1; fi
+if ! (INPUT=$(echo $BQSR); inFile); then exit 1; fi
 if ! outDirs; then exit 1; fi
 if ! outFile; then exit 1; fi
 

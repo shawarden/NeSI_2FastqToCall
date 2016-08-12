@@ -208,7 +208,7 @@ function storeMetrics {
 	fi
 	
 	printf \
-		"%19s: Task %-20s running on %2d@%1.1fGHz w/%3dGB took %s\n" \
+		"%s\t%s\t%dc\t%1.1fGHz\t%dGB\t%s\n" \
 		"$(date '+%Y-%m-%d %H:%M:%S')" \
 		"${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne ":$SLURM_ARRAY_TASK_ID")" \
 		${SLURM_JOB_CPUS_PER_NODE} \

@@ -16,27 +16,27 @@ BLOCK=${2}
 
 HEADER="CS"
 
-CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
+CONTIG=${CONTIGARRAY[$SLURM_ARRAY_TASK_ID]}
 OUTPUT=split/${CONTIG}_${BLOCK}.bam
 
 echo "$HEADER: ${INPUT} by contig ${CONTIG} to ${OUTPUT}"
 date
 
 # Make sure input and target folders exists and that output file does not!
-if ! inFile;  then exit 1; fi
-if ! outDirs; then exit 1; fi
-if ! outFile; then exit 1; fi
+if ! inFile;  then exit 10; fi
+if ! outDirs; then exit 10; fi
+if ! outFile; then exit 10; fi
 
 CMD="${SAMTOOLS} view -bh -@ 1 ${INPUT} ${CONTIG} > ${JOB_TEMP_DIR}/${OUTPUT}"
 echo "$HEADER: ${CMD}" | tee -a ../commands.txt
 
 if ! eval ${CMD}; then
 	cmdFailed
-	exit 1
+	exit 15
 fi
 
 # Move output to final location
-if ! finalOut; then exit 1; fi
+if ! finalOut; then exit 20; fi
 
 touch ${OUTPUT}.done
 

@@ -9,7 +9,10 @@
 # Nerge exit codes from piped commands so any command that fails carries to $?
 set -o pipefail
 
-# General References.
+######################
+# General References #
+######################
+
 export      PROJECT=/projects/uoo00032
 export    RESOURCES=${PROJECT}/Resources
 export    PLATFORMS=${RESOURCES}/Capture_Platforms/GRCh37
@@ -25,13 +28,36 @@ export       INDELS=${BUNDLE}/1000G_phase1.indels.b37.vcf
 export       COMMON=${RESOURCES}/Hapmap3_3commonvariants.vcf
 export          REF=${BUNDLE}/human_g1k_v37
 export         REFA=${REF}.fasta
-export         REFD=${REF}.dict
-export JOB_TEMP_DIR=$([ "${TMPDIR}" != "" ] && echo "${TMPDIR}" || echo "${PROJECT}/.tmp")	#system defined temp dir. /tmp/jobs/$SLURM_JOB_USER/$SLURM_JOB_ID
+export JOB_TEMP_DIR=$([ "${TMPDIR}" != "" ] && echo "${TMPDIR}" || echo "${PROJECT}/.tmp")
+
+##################################
+# Version controlled executables #
+##################################
 
 export      BWA=${BIN}/bwa-0.7.15/bwa
 export   PICARD=${BIN}/picard-tools-2.5.0/picard.jar
 export SAMTOOLS=${BIN}/samtools-1.3.1/samtools
 export     GATK=${BIN}/GenomeAnalysisTK-nightly-2016-07-22-g8923599/GenomeAnalysisTK.jar
+
+######################
+# Contig shinanigans #
+######################
+
+# Setup basic contig definition.
+export        REFD=${REF}.dict
+export CONTIGARRAY=("" $(cat ${REFD} | awk -F'[[:space:]:]' 'NR!=1{print $3}'))
+export  NUMCONTIGS=$(($(echo ${#CONTIGARRAY[@]}) - 1))
+
+# Gender vs autosomal contigs.
+export  SEXCONTIGS="23,24"	# Gender contigs that are special cases.
+export AUTOCONTIGS="1-22"	# Autosomal contigs that determine base coverage for gender calculation.
+
+# Gender contigs have parts that are not created equal.
+export       XPAR1="X:1-2699520"
+export       TRUEX="X:2699521-154931043"
+export       XPAR2="X:154931044-155260560"
+export       TRUEY="Y:2649521-59034050"
+
 
 ####################
 # Modules versions #
@@ -40,23 +66,6 @@ export     GATK=${BIN}/GenomeAnalysisTK-nightly-2016-07-22-g8923599/GenomeAnalys
 export MOD_ZLIB="zlib"
 export MOD_JAVA="Java"
 
-###########
-# Contigs #
-###########
-
-export CONTIGS=$(cat ${REFD} | awk -F'[[:space:]:]' 'NR!=1{print $3}')		# List of contigs.
-export CONTIGA=("" $(cat ${REFD} | awk -F'[[:space:]:]' 'NR!=1{print $3}'))	# Array of contigs. "" at start for 1-indexed.
-export NUMCONTIGS=$(($(echo ${#CONTIGA[@]}) - 1))							# Number of contigs.
-
-#########################
-# GrCh37 Gender regions #
-#########################
-
-export XPAR1="X:1-2699520"
-export TRUEX="X:2699521-154931043"
-export XPAR2="X:154931044-155260560"
-export TRUEY="Y:2649521-59034050"
-
 ###############################
 # FastQ Split Data management #
 ###############################
@@ -64,11 +73,11 @@ export TRUEY="Y:2649521-59034050"
 export FASTQ_MAXREAD=15000000	# How many reads per block.
 export FASTQ_MAXSCAN=10000		# How many lines to check for best index.
 export FASTQ_MAXDIFF=2			# Maximum index variation before new index is created.
-export FASTQ_MAXJOBS=1000		# Maximum number of alignment & sort array elements.
-export FASTQ_MAXJOBZ=$(($FASTQ_MAXJOBS - 1))	# Maximum number of alignment & sort array elements starting from 0.
-export FASTQ_MAXZPAD=${#FASTQ_MAXJOBS}	# Number of characters to pad to blocks.
+export FASTQ_MAXJOBS=100		# Maximum number of alignment & sort array elements.
+export FASTQ_MAXJOBZ=99	#$(($FASTQ_MAXJOBS - 1))	# Maximum number of alignment & sort array elements starting from 0.
+export FASTQ_MAXZPAD=4	#${#FASTQ_MAXJOBS}	# Number of characters to pad to blocks.
 
-export MAX_JOB_RATE=30			# Minimum number of seconds between job submissions.
+export MAX_JOB_RATE=1			# Minimum number of seconds between job submissions.
 
 
 ##########################
@@ -79,77 +88,188 @@ SB[ACCOUNT]=uoo00032
 SB[MAILUSER]=sam.hawarden@otago.ac.nz
 SB[MAILTYPE]=FAIL
 
-# MWT: Max Wall-Times
+# MWT: Calibrated Max Wall-Time
 # MPC: Memory per Cores
 # CPT: Cores per Task
 
-SB[RS,MWT]=0-02:30:00
+# Calculating base and per contig walltimes.
+# combined read filesize:
+# WALLTIME=BASE_MULTIPLIER * CONTIG_MULTIPLIER * CALIBRATED_MAX_WALLTIME * (INPUT_SIZE / CALIBRATED_INPUT_SIZE)
+# WALLTIME=$(printf "%f\n" $(echo "${SB[BWTM]} * ${SB[WTM,${CONTIGNUMBER}]} * ${SB[${HEADER},MWT]} * ($INPUT_FILE_SIZE / $CALIBRATED_FILE_SIZE)" | bc -l))
+#
+
+SB[BWTM]=1.25	# Base wall-time multiplier.
+
+# ReadSplit.
+SB[RS,MWT]=210
 SB[RS,MPC]=2048
 SB[RS,CPT]=8
- 
-SB[PA,MWT]=0-01:30:00
+
+# PrimaryAlignment.
+SB[PA,MWT]=90
 SB[PA,MPC]=2048
 SB[PA,CPT]=8
 
-SB[SS,MWT]=0-01:30:00
+# SortSAM
+SB[SS,MWT]=90
 SB[SS,MPC]=4096
 SB[SS,CPT]=4
 
-SB[CS,MWT]=0-00:15:00
+# ContigSplit
+SB[CS,MWT]=30
 SB[CS,MPC]=2048
 SB[CS,CPT]=2
 
-SB[MC,MWT]=0-02:00:00
+# MergeContigs
+SB[MC,MWT]=120
 SB[MC,MPC]=4096
 SB[MC,CPT]=4
 
-SB[MD,MWT]=0-03:00:00
+# MarkDuplicates
+SB[MD,MWT]=180
 SB[MD,MPC]=8192
 SB[MD,CPT]=2
 
-SB[BR,MWT]=0-01:00:00
+# BaseRecalibration
+SB[BR,MWT]=60
 SB[BR,MPC]=4096
 SB[BR,CPT]=4
 
-SB[PR,MWT]=0-02:00:00
+# PrintReads
+SB[PR,MWT]=120
 SB[PR,MPC]=4092
 SB[PR,CPT]=8
 
-SB[DC,MWT]=0-00:30:00
+# DepthofCoverage
+SB[DC,MWT]=30
 SB[DC,MPC]=2048
 SB[DC,CPT]=4
 
-SB[GD,MWT]=0-00:10:00
+# GenderDetermination
+SB[GD,MWT]=10
 SB[GD,MPC]=512
 SB[GD,CPT]=1
 
-SB[HC,MWT]=0-01:30:00
+# HaplotypeCaller
+SB[HC,MWT]=90
 SB[HC,MPC]=4096
 SB[HC,CPT]=8
 
-SB[CR,MWT]=0-01:00:00
+# CatReads
+SB[CR,MWT]=60
 SB[CR,MPC]=4096
 SB[CR,CPT]=1
 
-SB[RI,MWT]=0-01:30:00
+# ReadIndex
+SB[RI,MWT]=93
 SB[RI,MPC]=4096
 SB[RI,CPT]=1
 
-SB[CV,MWT]=0-02:00:00
+# CatVariants
+SB[CV,MWT]=120
 SB[CV,MPC]=16384
 SB[CV,CPT]=1
 
-SB[FP,MWT]=0-06:00:00
+# FingerPrint
+SB[FP,MWT]=360
 SB[FP,MPC]=4096
 SB[FP,CPT]=8
 
-SB[SV,MWT]=0-06:00:00
+# SelectVariants
+SB[SV,MWT]=360
 SB[SV,MPC]=4096
 SB[SV,CPT]=8
 
-SB[TF,MWT]=0-00:20:00
+# TransferFile
+SB[TF,MWT]=20
 SB[TF,MPC]=512
 SB[TF,CPT]=1
+
+#Wall time multipliers to dynamically decrease array element walltime.
+SB[WTM,1]=1.0
+SB[WTM,2]=${SB[WTM,1]}
+SB[WTM,3]=1.0
+SB[WTM,4]=1.0
+SB[WTM,5]=1.0
+SB[WTM,6]=1.0
+SB[WTM,7]=1.0
+SB[WTM,8]=1.0
+SB[WTM,9]=1.0
+SB[WTM,10]=1.0
+SB[WTM,11]=1.0
+SB[WTM,12]=1.0
+SB[WTM,13]=1.0
+SB[WTM,14]=1.0
+SB[WTM,15]=1.0
+SB[WTM,16]=1.0
+SB[WTM,17]=1.0
+SB[WTM,18]=1.0
+SB[WTM,19]=1.0
+SB[WTM,20]=1.0
+SB[WTM,21]=1.0
+SB[WTM,22]=1.0
+SB[WTM,23]=1.0
+SB[WTM,24]=1.0
+SB[WTM,25]=1.0
+SB[WTM,26]=${SB[WTM,26]}
+SB[WTM,27]=${SB[WTM,26]}
+SB[WTM,28]=${SB[WTM,26]}
+SB[WTM,29]=${SB[WTM,26]}
+SB[WTM,30]=${SB[WTM,26]}
+SB[WTM,31]=${SB[WTM,26]}
+SB[WTM,32]=${SB[WTM,26]}
+SB[WTM,33]=${SB[WTM,26]}
+SB[WTM,34]=${SB[WTM,26]}
+SB[WTM,35]=${SB[WTM,26]}
+SB[WTM,36]=${SB[WTM,26]}
+SB[WTM,37]=${SB[WTM,26]}
+SB[WTM,38]=${SB[WTM,26]}
+SB[WTM,39]=${SB[WTM,26]}
+SB[WTM,40]=${SB[WTM,26]}
+SB[WTM,41]=${SB[WTM,26]}
+SB[WTM,42]=${SB[WTM,26]}
+SB[WTM,43]=${SB[WTM,26]}
+SB[WTM,44]=${SB[WTM,26]}
+SB[WTM,45]=${SB[WTM,26]}
+SB[WTM,46]=${SB[WTM,26]}
+SB[WTM,47]=${SB[WTM,26]}
+SB[WTM,48]=${SB[WTM,26]}
+SB[WTM,49]=${SB[WTM,26]}
+SB[WTM,50]=${SB[WTM,26]}
+SB[WTM,51]=${SB[WTM,26]}
+SB[WTM,52]=${SB[WTM,26]}
+SB[WTM,53]=${SB[WTM,26]}
+SB[WTM,54]=${SB[WTM,26]}
+SB[WTM,55]=${SB[WTM,26]}
+SB[WTM,56]=${SB[WTM,26]}
+SB[WTM,57]=${SB[WTM,26]}
+SB[WTM,58]=${SB[WTM,26]}
+SB[WTM,59]=${SB[WTM,26]}
+SB[WTM,60]=${SB[WTM,26]}
+SB[WTM,61]=${SB[WTM,26]}
+SB[WTM,62]=${SB[WTM,26]}
+SB[WTM,63]=${SB[WTM,26]}
+SB[WTM,64]=${SB[WTM,26]}
+SB[WTM,65]=${SB[WTM,26]}
+SB[WTM,66]=${SB[WTM,26]}
+SB[WTM,67]=${SB[WTM,26]}
+SB[WTM,68]=${SB[WTM,26]}
+SB[WTM,69]=${SB[WTM,26]}
+SB[WTM,70]=${SB[WTM,26]}
+SB[WTM,71]=${SB[WTM,26]}
+SB[WTM,72]=${SB[WTM,26]}
+SB[WTM,73]=${SB[WTM,26]}
+SB[WTM,74]=${SB[WTM,26]}
+SB[WTM,75]=${SB[WTM,26]}
+SB[WTM,76]=${SB[WTM,26]}
+SB[WTM,77]=${SB[WTM,26]}
+SB[WTM,78]=${SB[WTM,26]}
+SB[WTM,79]=${SB[WTM,26]}
+SB[WTM,80]=${SB[WTM,26]}
+SB[WTM,81]=${SB[WTM,26]}
+SB[WTM,82]=${SB[WTM,26]}
+SB[WTM,83]=${SB[WTM,26]}
+SB[WTM,84]=${SB[WTM,26]}
 
 export SB
 
@@ -180,6 +300,42 @@ function printHMS {
 }
 export -f printHMS
 
+##
+# Outputs minutes from various combinations of time strings:
+#  D-HH:MM:SS
+#    HH:MM:SS
+#       MM:SS
+#       MM
+##
+function printMinutes {
+	INPUT="${1}"
+	DAYS=$(echo ${INPUT} | cut -d'-' -f1)
+	[ "$DAYS" == "" ] && DAYS=0
+	
+	INPUT=$(echo ${INPUT} | cut -d'-' -f2)
+	local numTimeBlocks=$(($(echo $INPUT | grep -o ':' | wc -l) + 1))
+	case $numTimeBlocks in
+		1)	# Minutes
+			MINS=$INPUT
+			;;
+		2)	# Minutes:Seconds
+			MINS=$(echo $INPUT | cut -d':' -f1)
+			SECS=$(echo $INPUT | cut -d':' -f2)
+			;;
+		3)	# Hours:Minutes:Seconds
+			HOURS=$(echo $INPUT | cut -d':' -f1)
+			 MINS=$(echo $INPUT | cut -d':' -f2)
+			 SECS=$(echo $INPUT | cut -d':' -f3)
+			;;
+		*)
+			echo "WHAT?"
+			exit 1
+	esac
+	
+	printf "%d" $((($DAYS * 1440) + ($HOURS * 60) + $MINS + ($SECS/60)))
+}
+export -f printMinutes
+
 #######################
 # Output basic node information on job failure.
 #######################
@@ -201,11 +357,13 @@ export -f scriptFailed
 # Output runtime metrics to a log file.
 #######################
 function storeMetrics {
-	if [ "${1}" != "" ]; then
-		BACKDIR="../"
-	else
-		BACKDIR=""
-	fi
+	case $HEADER in
+		RS|PA|SS|CS)
+			BACKDIR="../"
+			;;
+		*)
+			BACKDIR=""
+	esac
 	
 	printf \
 		"%s\t%s\t%dc\t%1.1fGHz\t%dGB\t%s\n" \
@@ -215,9 +373,37 @@ function storeMetrics {
 		$(echo "$(lscpu | grep "CPU MHz" | awk '{print $3}') / 1000" | bc -l) \
 		$(((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU}) / 1024)) \
 		$(printHMS $SECONDS) | \
-		tee -a ${BACKDIR}metrics.txt >> ${HOME}/metrics.txt
+		tee -a ${BACKDIR}metrics.txt | \
+		tee -a ${HOME}/metrics.txt >> ${HOME}/$(date '+%Y_%m_%d').metrics.txt
 }
 export -f storeMetrics
+
+#######################
+# Output runtime metrics to a log file.
+#######################
+function failMetrics {
+	case $HEADER in
+		RS|PA|SS|CS)
+			BACKDIR="../"
+			;;
+		*)
+			BACKDIR=""
+	esac
+	
+	printf \
+		"%s\tSIGTERM\t%s\t%dc\t%1.1fGHz\t%dGB\t%s\n" \
+		"$(date '+%Y-%m-%d %H:%M:%S')" \
+		"${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne ":$SLURM_ARRAY_TASK_ID")" \
+		${SLURM_JOB_CPUS_PER_NODE} \
+		$(echo "$(lscpu | grep "CPU MHz" | awk '{print $3}') / 1000" | bc -l) \
+		$(((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU}) / 1024)) \
+		$(printHMS $SECONDS) | \
+		tee -a ${BACKDIR}metrics.txt | \
+		tee -a ${HOME}/metrics.txt >> ${HOME}/$(date '+%Y_%m_%d').metrics.txt
+}
+export -f failMetrics
+
+trap "failMetrics; exit 99" SIGTERM
 
 #####################
 # Return a string with a new item on the end
@@ -281,6 +467,7 @@ function tieTaskDeps {
 					# Match found.
 #					printf " T[%s->%s] " "${childJobID}_$i" "${parentJobID}_$j"
 					scontrol update JobId=${childJobID}_$i Dependency=afterok:${parentJobID}_$j
+					# TimeLimit=
 				fi
 			done
 		done
@@ -364,7 +551,14 @@ export -f depCheck
 function dispatch {
 	jobWait
 	JOBCAT=${1}
-	echo -ne "--account ${SB[ACCOUNT]} --mail-user=${SB[MAILUSER]} --mail-type=${SB[MAILTYPE]} --time ${SB[${JOBCAT},MWT]} --mem-per-cpu=${SB[${JOBCAT},MPC]} --cpus-per-task ${SB[${JOBCAT},CPT]}"
+	printf "%s--account %s --mail-user %s --mail-type %s --time %.0f --mem-per-cpu %d --cpus-per-task %d" \
+	"" \
+	${SB[ACCOUNT]} \
+	${SB[MAILUSER]} \
+	${SB[MAILTYPE]} \
+	${SB[${JOBCAT},MWT]} \
+	${SB[${JOBCAT},MPC]} \
+	${SB[${JOBCAT},CPT]}
 }
 export -f dispatch
 

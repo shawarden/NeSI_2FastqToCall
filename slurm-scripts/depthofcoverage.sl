@@ -11,7 +11,7 @@
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
 PLATFORM=${1}
-CONTIG=$([ "${2}" == "" ] && echo -ne "${CONTIGA[$SLURM_ARRAY_TASK_ID]}" || echo -ne "${2}")	# Input value or specific value.
+CONTIG=$([ "${2}" == "" ] && echo -ne "${CONTIGARRAY[$SLURM_ARRAY_TASK_ID]}" || echo -ne "${2}")	# Input value or specific value.
 
  INPUT=printreads/${CONTIG}.bam
 OUTPUT=depth/${CONTIG}
@@ -22,8 +22,8 @@ echo "$HEADER: ${INPUT} + ${PLATFORM} -> ${OUTPUT}"
 date
 
 # Make sure input and target folders exists and that output file does not!
-if ! inFile;  then exit 1; fi
-if ! outFile; then exit 1; fi
+if ! inFile;  then exit 10; fi
+if ! outFile; then exit 10; fi
 
 platformBED=${PLATFORMS}/${PLATFORM}.bed
   genderBED=${PLATFORMS}/$([ "$PLATFORM" == "Genomic" ] && echo -ne "AV5" || echo -ne "$PLATFORM" ).bed
@@ -61,7 +61,7 @@ echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
 	cmdFailed
-	exit 1
+	exit 15
 fi
 
 touch ${OUTPUT}.done

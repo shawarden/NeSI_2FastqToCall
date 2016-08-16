@@ -11,7 +11,7 @@
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
-CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
+CONTIG=${CONTIGARRAY[$SLURM_ARRAY_TASK_ID]}
  INPUT=merged/${CONTIG}.bam
 OUTPUT=markdup/${CONTIG}.bam
 
@@ -21,9 +21,9 @@ echo "$HEADER: ${INPUT} -> ${OUTPUT}"
 date
 
 # Make sure input and target folders exists and that output file does not!
-if ! inFile;  then exit 1; fi
-if ! outDirs; then exit 1; fi
-if ! outFile; then exit 1; fi
+if ! inFile;  then exit 10; fi
+if ! outDirs; then exit 10; fi
+if ! outFile; then exit 10; fi
 
 PIC_ARGS="CREATE_INDEX=true \
 MAX_RECORDS_IN_RAM=${MAX_RECORDS} \
@@ -38,11 +38,11 @@ echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
 	cmdFailed
-	exit 1
+	exit 15
 fi
 
 # Move output to final location
-if ! finalOut; then exit 1; fi
+if ! finalOut; then exit 20; fi
 
 rm ${INPUT} ${INPUT%.bam}.bai && echo "$HEADER: Purged input files!"
 

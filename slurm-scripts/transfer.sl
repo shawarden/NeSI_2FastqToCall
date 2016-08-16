@@ -17,7 +17,7 @@ HEADER="TF"
 
 echo "$HEADER: IDN:${IDN} + INPUT:${INPUT} -> OUTPUT:${OUTPUT}"
 
-if ! inFile; then exit 1; fi
+if ! inFile; then exit 10; fi
 
 if [ "${OUTPUT}" == "" ]
 then
@@ -47,7 +47,7 @@ echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
 	cmdFailed
-	exit 1
+	exit 15
 fi
 
 touch ${LABEL}.transfer.done

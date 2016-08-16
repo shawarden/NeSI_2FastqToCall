@@ -124,7 +124,7 @@ else
 	# Both reads are done. Build read list and spool alignments.
 	READGROUP=$(cat blocks/R1_ReadGroup.txt)
 	readBlocks=$(($(find ./blocks -type f -iname "${READGROUP}_R1_*.fastq.gz.done" | wc -l) - 1))
-	purgeList="$readBlocks-$FASTQ_MAXJOBZ"
+	purgeList="$(($readBlocks+1))-$FASTQ_MAXJOBZ"
 	scancel ${DEP_PA}_[${purgeList}] ${DEP_SS}_[${purgeList}] && echo "Purged excess alignment and sort jobs $purgeList"
 	for i in $(seq 0 ${readBlocks}); do
 		if [ $i -lt $readBlocks ]; then

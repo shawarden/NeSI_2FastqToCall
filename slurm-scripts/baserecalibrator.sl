@@ -10,7 +10,7 @@
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
-CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
+CONTIG=${CONTIGARRAY[$SLURM_ARRAY_TASK_ID]}
  INPUT=markdup/${CONTIG}.bam
 OUTPUT=baserecal/${CONTIG}.firstpass
 
@@ -20,8 +20,8 @@ echo "$HEADER: ${INPUT} -> ${OUTPUT}"
 date
 
 # Make sure input and target folders exists and that output file does not!
-if ! inFile;  then exit 1; fi
-if ! outFile; then exit 1; fi
+if ! inFile;  then exit 10; fi
+if ! outFile; then exit 10; fi
 
 GATK_PROC=BaseRecalibrator
 GATK_ARGS="-T ${GATK_PROC} \
@@ -38,7 +38,7 @@ echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
 	cmdFailed
-	exit 1
+	exit 15
 fi
 
 touch ${OUTPUT}.done

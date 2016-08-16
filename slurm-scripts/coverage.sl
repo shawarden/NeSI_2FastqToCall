@@ -27,13 +27,13 @@ ren='^[0-9]+$'
 
 printf "#%-10s %8s %s\n" "Chromosome" "Coverage" "Count" | tee -a ${OUTPUT}
 
-for contig in ${CONTIGS}; do
+for contig in ${CONTIGARRAY[@]}; do
 	INPUT=depth/${contig}.sample_summary
 	if [ ! -e ${INPUT} ]; then
 		# Oh crappola!
 		echo "#${contig} file ${INPUT} doesn't exist!" | tee -a ${OUTPUT}
 		echo "exit 1" | tee -a ${OUTPUT}
-		exit 1
+		exit 10
 	fi
 	
 	contigCount=$(awk 'NR==2{print $2}' ${INPUT})

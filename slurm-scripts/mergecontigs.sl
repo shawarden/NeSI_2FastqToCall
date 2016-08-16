@@ -11,7 +11,7 @@
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
-CONTIG=${CONTIGA[$SLURM_ARRAY_TASK_ID]}
+CONTIG=${CONTIGARRAY[$SLURM_ARRAY_TASK_ID]}
 OUTPUT=merged/${CONTIG}.bam
 
 HEADER="MC"
@@ -25,7 +25,7 @@ numcontigMerBlocks=$(echo "$contigMerBlocks" | wc -l)
 if [ $numcontigMerBlocks -eq 0 ]; then
 	echo "$HEADER: Merge contig ${CONTIG} contains $numcontigMerBlocks files!"
 #	scriptFailed
-	exit 1
+	exit 10
 else
 	echo $HEADER: Merge contig ${CONTIG} will run $numcontigMerBlocks files: \"${contigMerBlocks}\"
 fi
@@ -35,18 +35,18 @@ for INPUT in ${contigMerBlocks}; do
 	if inFile; then
 		mergeList="${mergeList} I=${INPUT}"
 	else
-		exit 1
+		exit 10
 	fi
 done
 
 if [ "$mergeList" == "" ]; then
 	echo "$HEADER: No inputs defined!"
-	exit 1
+	exit 10
 fi
 
 # Make sure input and target folders exists and that output file does not!
-if ! outDirs; then exit 1; fi
-if ! outFile; then exit 1; fi
+if ! outDirs; then exit 10; fi
+if ! outFile; then exit 10; fi
 
 PIC_ARGS="SORT_ORDER=coordinate \
 USE_THREADING=true \
@@ -62,11 +62,11 @@ echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
 	cmdFailed
-	exit 1
+	exit 15
 fi
 
 # Move output to final location
-if ! finalOut; then exit 1; fi
+if ! finalOut; then exit 20; fi
 
 # Get list of sorted blocks and add them to the delete pile!
 # Don't delete the .done files through.

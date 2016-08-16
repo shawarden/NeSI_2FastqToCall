@@ -10,7 +10,7 @@
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
-CONTIG=$([ "$1" != "" ] && echo "$1" || echo "${CONTIGA[$SLURM_ARRAY_TASK_ID]}")
+CONTIG=$([ "$1" != "" ] && echo -ne "$1" || echo -ne "${CONTIGARRAY[$SLURM_ARRAY_TASK_ID]}")
 
 HEADER="HC"
 
@@ -41,9 +41,9 @@ echo "$HEADER: ${INPUT} + ${CONTIG}c + ${intervalPloidy}p -> ${OUTPUT}"
 date
 
 # Make sure input and target folders exists and that output file does not!
-if ! inFile;  then exit 1; fi
-if ! outDirs; then exit 1; fi
-if ! outFile; then exit 1; fi
+if ! inFile;  then exit 10; fi
+if ! outDirs; then exit 10; fi
+if ! outFile; then exit 10; fi
 
 GATK_PROC=HaplotypeCaller
 GATK_ARGS="-T ${GATK_PROC} \
@@ -61,11 +61,11 @@ echo "$HEADER ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
 	cmdFailed
-	exit 1
+	exit 15
 fi
 
 # Move output to final location
-if ! finalOut; then exit 1; fi
+if ! finalOut; then exit 20; fi
 
 touch ${OUTPUT}.done
 

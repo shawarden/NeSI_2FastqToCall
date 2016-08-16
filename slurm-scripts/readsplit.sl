@@ -29,7 +29,7 @@ echo "$HEADER: R${READNUM} ${INPUT}"
 date
 
 # Make sure input exists!
-if ! inFile; then exit 1; fi
+if ! inFile; then exit 10; fi
 
 module load ${MOD_ZLIB}
 
@@ -175,7 +175,7 @@ mkdir -p blocks
 
 if ! splitByReadGroupAndCompress; then
 	cmdFailed
-	exit 1
+	exit 15
 fi
 
 #rm ${INPUT} && echo "$HEADER: Purged input file!"

@@ -21,22 +21,22 @@ echo $HEADER: $FILES + "Header($BAMHEAD) ->" $OUTPUT
 date
 
 for INPUT in ${FILES}; do
-	if ! inFile; then exit 1; fi
+	if ! inFile; then exit 10; fi
 done
 
-if ! outDirs; then exit 1; fi
-if ! outFile; then exit 1; fi
+if ! outDirs; then exit 10; fi
+if ! outFile; then exit 10; fi
 
 CMD="$(which srun) ${SAMTOOLS} cat -h ${BAMHEAD} -o ${JOB_TEMP_DIR}/${OUTPUT} ${FILES}"
 echo "$HEADER: ${CMD}}" | tee -a commands.txt
 
 if ! ${CMD}; then
 	cmdFailed
-	exit 1
+	exit 15
 fi
 
 # Move output to final location
-if ! finalOut; then exit 1; fi
+if ! finalOut; then exit 20; fi
 
 touch ${OUTPUT}.done
 

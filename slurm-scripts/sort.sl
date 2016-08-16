@@ -23,9 +23,9 @@ echo "$HEADER: ${SAMPLE} ${INPUT} to ${OUTPUT}"
 date
 
 # Make sure input and target folders exists and that output file does not!
-if ! inFile;  then exit 1; fi
-if ! outDirs; then exit 1; fi
-if ! outFile; then exit 1; fi
+if ! inFile;  then exit 10; fi
+if ! outDirs; then exit 10; fi
+if ! outFile; then exit 10; fi
 
 module load ${MOD_JAVA}
 
@@ -40,11 +40,11 @@ echo "$HEADER: ${CMD}" | tee -a ../commands.txt
 
 if ! ${CMD}; then
 	cmdFailed
-	exit 1
+	exit 15
 fi
 
 # Move output to final location
-if ! finalOut; then exit 1; fi
+if ! finalOut; then exit 20; fi
 
 rm ${INPUT} && echo "$HEADER: Purged aligned files!"
 

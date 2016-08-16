@@ -21,15 +21,15 @@ date
 mergeList=""
 for INPUT in ${FILES}; do
 	if ! inFile; then
-		exit 1
+		exit 10
 	else 
 		mergeList="${mergeList} -V ${INPUT}"
 	fi
 done
 
 # Make sure input and target folders exists and that output file does not!
-if ! outDirs; then exit 1; fi
-if ! outFile; then exit 1; fi
+if ! outDirs; then exit 10; fi
+if ! outFile; then exit 10; fi
 
 GATK_PROC=org.broadinstitute.gatk.tools.CatVariants
 GATK_ARGS="${GATK_PROC} \
@@ -43,11 +43,11 @@ echo "$HEADER ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
 	cmdFailed
-	exit 1
+	exit 15
 fi
 
 # Move output to final location
-if ! finalOut; then exit 1; fi
+if ! finalOut; then exit 20; fi
 
 rm $FILES && echo "$HEADER: Purged input files!"
 

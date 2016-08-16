@@ -20,6 +20,25 @@
 # Update history
 
 
+## 2016-08-16
+
+### Added
+- ExitCodes. 10: IO error. 15: Pipeline command error. 20: File move error.
+- Gender contig definition in baserefs to allow seemless haplotypecaller array.
+- Base Walltime multiplier to baserefs to allow per-contig walltimes in dispatch function.
+- Signal trap for pre-kill event detection and logging of processes that are about to be killed.
+
+### Changed
+- Runtime for ContigSplit increased to 30m as it seems to exceed 15m on some nodes.
+- Walltime values converted to minutes for easy manipulation by dispatch function.
+
+### Fixed
+- Align & Sort purge taking purging one too many jobs.
+
+### Removed
+- Non arrayed list of contigs. No point in having the same data twice.
+
+
 ## 2016-08-12
 
 ### Fixed

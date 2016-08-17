@@ -21,27 +21,31 @@ echo $HEADER: $FILES + "Header($BAMHEAD) ->" $OUTPUT
 date
 
 for INPUT in ${FILES}; do
-	if ! inFile; then exit 10; fi
+	if ! inFile; then exit $EXIT_IO; fi
 done
 
-if ! outDirs; then exit 10; fi
-if ! outFile; then exit 10; fi
+if ! outDirs; then exit $EXIT_IO; fi
+if ! outFile; then exit $EXIT_IO; fi
 
 CMD="$(which srun) ${SAMTOOLS} cat -h ${BAMHEAD} -o ${JOB_TEMP_DIR}/${OUTPUT} ${FILES}"
 echo "$HEADER: ${CMD}}" | tee -a commands.txt
 
 if ! ${CMD}; then
 	cmdFailed
-	exit 15
+	exit $EXIT_PR
 fi
 
 # Move output to final location
-if ! finalOut; then exit 20; fi
+if ! finalOut; then exit $EXIT_MV; fi
 
 touch ${OUTPUT}.done
 
-${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}
 sbatch $(dispatch "RI") -J RI_${IDN} ${SLSBIN}/catreadsindex.sl ${OUTPUT} ${OUTPUT%.bam}.bai
+
+if ! ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}; then
+	echo "$HEADER: Transfer failed!"
+	exit $EXIT_TF
+fi
 
 storeMetrics
 

@@ -21,15 +21,15 @@ date
 mergeList=""
 for INPUT in ${FILES}; do
 	if ! inFile; then
-		exit 10
+		exit $EXIT_IO
 	else 
 		mergeList="${mergeList} -V ${INPUT}"
 	fi
 done
 
 # Make sure input and target folders exists and that output file does not!
-if ! outDirs; then exit 10; fi
-if ! outFile; then exit 10; fi
+if ! outDirs; then exit $EXIT_IO; fi
+if ! outFile; then exit $EXIT_IO; fi
 
 GATK_PROC=org.broadinstitute.gatk.tools.CatVariants
 GATK_ARGS="${GATK_PROC} \
@@ -43,18 +43,25 @@ echo "$HEADER ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
 	cmdFailed
-	exit 15
+	exit $EXIT_PR
 fi
 
 # Move output to final location
-if ! finalOut; then exit 20; fi
+if ! finalOut; then exit $EXIT_MV; fi
 
 rm $FILES && echo "$HEADER: Purged input files!"
 
 touch ${OUTPUT}.done
 
 # Start transfers for variants file and index.
-${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}
-${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}.tbi
+if ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}; then
+	echo "$HEADER: Transfer failed!"
+	exit $EXIT_TF
+fi
+
+if ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}.tbi; then
+	echo "$HEADER: Transfer index failed!"
+	exit $EXIT_TF
+fi
 
 storeMetrics

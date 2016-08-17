@@ -33,7 +33,7 @@ for contig in ${CONTIGARRAY[@]}; do
 		# Oh crappola!
 		echo "#${contig} file ${INPUT} doesn't exist!" | tee -a ${OUTPUT}
 		echo "exit 1" | tee -a ${OUTPUT}
-		exit 10
+		exit $EXIT_IO
 	fi
 	
 	contigCount=$(awk 'NR==2{print $2}' ${INPUT})

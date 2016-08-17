@@ -33,10 +33,10 @@ if [ $(echo "$READGROUP" | wc -w) -gt 1 ]; then
 fi
 
 # Make sure input and target folders exists and that output file does not!
-if ! (INPUT=${READ1}; inFile); then exit 10; fi
-if ! (INPUT=${READ2}; inFile); then exit 10; fi
-if ! outDirs; then exit 10; fi
-if ! outFile; then exit 10; fi
+if ! (INPUT=${READ1}; inFile); then exit $EXIT_IO; fi
+if ! (INPUT=${READ2}; inFile); then exit $EXIT_IO; fi
+if ! outDirs; then exit $EXIT_IO; fi
+if ! outFile; then exit $EXIT_IO; fi
 
 # Get readgroup blocks from either INFO_INFO_INFO_.. or INFO INFO INFO ...
      INTRUMENT=$(echo ${READGROUP} | awk -F'[[:blank:]_]' '{print $1}')
@@ -56,11 +56,11 @@ echo "$HEADER: ${CMD}" | tee -a ../commands.txt
 
 if ! eval ${CMD}; then
 	cmdFailed
-	exit 15
+	exit $EXIT_PR
 fi
 
 # Move output to final location
-if ! finalOut; then exit 20; fi
+if ! finalOut; then exit $EXIT_MV; fi
 
 rm ${READ1} ${READ2} && echo "$HEADER: Purged read files!"
 

@@ -29,7 +29,7 @@ echo "$HEADER: R${READNUM} ${INPUT}"
 date
 
 # Make sure input exists!
-if ! inFile; then exit 10; fi
+if ! inFile; then exit $EXIT_IO; fi
 
 module load ${MOD_ZLIB}
 
@@ -81,18 +81,18 @@ function splitByReadGroupAndCompress {
 			if ( ++readsProcessed%splitPoint == 0 ) {	# Multiple of splitPoint, increment files.
 				blockCount++
 				padBlockCount=sprintf("%0"zeroPad"d", blockCount)
+				# Check if we are writing blocks or if we are not writing blocks then if read is 1, check for an alignment run.
+				if (writeBlock || readNumber=="R1") {
+					# Spawn alignment if the next block in the sequence exists for both reads.
+					system("sleep 1s; "pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "blockCount" "alignArray" "sortArray)
+				}
+				
 				if (writeBlock) {
 					close (outStream)
 					system("touch "outFile".done")
 					print outHeader": Block "padBlock" finished at "readsProcessed" reads. Starting "padBlockCount
 				} else {
 					print outHeader": Block "padBlock" already written. Moving on to "padBlockCount
-				}
-				
-				# Check if we are writing blocks or if we are not writing blocks then if read is 1, check for an alignment run.
-				if (writeBlock || readNumber=="R1") {
-					# Spawn alignment if the next block in the sequence exists for both reads.
-					system("sleep 1s; "pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "blockCount" "alignArray" "sortArray)
 				}
 				
 				# Update current block number
@@ -175,7 +175,7 @@ mkdir -p blocks
 
 if ! splitByReadGroupAndCompress; then
 	cmdFailed
-	exit 15
+	exit $EXIT_PR
 fi
 
 #rm ${INPUT} && echo "$HEADER: Purged input file!"

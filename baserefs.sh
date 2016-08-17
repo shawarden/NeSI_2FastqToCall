@@ -9,6 +9,15 @@
 # Nerge exit codes from piped commands so any command that fails carries to $?
 set -o pipefail
 
+##############
+# Exit codes #
+##############
+
+export EXIT_IO=10
+export EXIT_PR=15
+export EXIT_MV=20
+export EXIT_TF=21
+
 ######################
 # General References #
 ######################
@@ -141,9 +150,9 @@ SB[PR,MPC]=4092
 SB[PR,CPT]=8
 
 # DepthofCoverage
-SB[DC,MWT]=30
+SB[DC,MWT]=60
 SB[DC,MPC]=2048
-SB[DC,CPT]=4
+SB[DC,CPT]=8
 
 # GenderDetermination
 SB[GD,MWT]=10
@@ -378,6 +387,8 @@ function storeMetrics {
 }
 export -f storeMetrics
 
+trap "echo EXIT" EXIT
+
 #######################
 # Output runtime metrics to a log file.
 #######################
@@ -391,7 +402,7 @@ function failMetrics {
 	esac
 	
 	printf \
-		"%s\tSIGTERM\t%s\t%dc\t%1.1fGHz\t%dGB\t%s\n" \
+		"%s\t%s\t%dc\t%1.1fGHz\t%dGB\t%s\tSIGTERM\n" \
 		"$(date '+%Y-%m-%d %H:%M:%S')" \
 		"${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne ":$SLURM_ARRAY_TASK_ID")" \
 		${SLURM_JOB_CPUS_PER_NODE} \
@@ -403,7 +414,7 @@ function failMetrics {
 }
 export -f failMetrics
 
-trap "failMetrics; exit 99" SIGTERM
+trap "failMetrics" SIGTERM
 
 #####################
 # Return a string with a new item on the end
@@ -468,6 +479,10 @@ function tieTaskDeps {
 #					printf " T[%s->%s] " "${childJobID}_$i" "${parentJobID}_$j"
 					scontrol update JobId=${childJobID}_$i Dependency=afterok:${parentJobID}_$j
 					# TimeLimit=
+				else
+					# No match found. Parent array does not have this element so it is finished.
+					# Unlock this element from dependencies.
+					scontrol update JobId=${childJobID}_$i Dependency=
 				fi
 			done
 		done

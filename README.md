@@ -20,6 +20,20 @@
 # Update history
 
 
+## 2016-08-17
+
+### Changed
+- DepthOfCoverage runtime doubled from 30m to 60m as exceeding runtime allowance with ~4m to go.
+- Set Gender haplotypecalling to correct array position. Cosmetic only as operational is defined via command-line.
+- Rearranged ReadSplit logging output to more logical sequence.
+- Merged Spool_Sample's file size detection for read pair to facilitate overall walltime multiplier based on input file size vs calibrated file size.
+- Moved SIGTERM metric entry to end of line to maintain output consistency.
+- Moved storeMetrics function to exit trap.
+
+### Fixed
+- Array elements that do not have a matching element in the previous array were left dependent on the entire previous array
+
+
 ## 2016-08-16
 
 ### Added

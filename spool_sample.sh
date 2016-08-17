@@ -105,11 +105,22 @@ if [ ! -e ${SAMPLE}_R2_split.done ]; then
 fi
 
 # Read 1 split isn't complete, run it now.
-read1Size=$(ls -lah ${READ1} | awk '{print $5}')
-read2Size=$(ls -lah ${READ2} | awk '{print $5}')
+
+# Get a fancy size
+sizeString=" kMGTEPYZ"
+sizeBlock=0
+readSize=$(($(ls -la ${READ1} | awk '{print $5}') + $(ls -la ${READ2} | awk '{print $5}')))
+readSize=$(($1 + $2))
+while [ $(echo "$readSize / 1024 > 0" | bc) -eq 1 ]; do
+	echo $readSize
+	readSize=$(echo "$readSize / 1024" | bc -l)
+	sizeBlock=$((sizeBlock+1))
+done
+
+readSize=$(echo $(printf "%.0f" $readSize)${sizeString:${sizeBlock}:1}B | sed -e 's/ //g')
 
 if [ "$splitReadArray" != "" ]; then
-	DEP_SR=$(sbatch $(dispatch "RS") -J RS_${SAMPLE}_${read1Size}_${read2Size} -a $splitReadArray ${SLSBIN}/readsplit.sl ${SAMPLE} ${READ1} ${READ2} ${DEP_PA} ${DEP_SS} | awk '{print $4}')
+	DEP_SR=$(sbatch $(dispatch "RS") -J RS_${SAMPLE}_${readSize} -a $splitReadArray ${SLSBIN}/readsplit.sl ${SAMPLE} ${READ1} ${READ2} ${DEP_PA} ${DEP_SS} | awk '{print $4}')
 	if [ $? -ne 0 ] || [ "$DEP_SR" == "" ]; then
 		printf "FAILED!\n"
 		exit 1

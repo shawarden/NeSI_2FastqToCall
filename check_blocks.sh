@@ -80,7 +80,7 @@ function spoolAlign {
 	if [ "$splitArray" != "" ]; then
 		# Split elements defined!
 		
-		DEP_CS=$(sbatch $(dispatch "CS") -J CS_${SAMPLE}_${ZPADBLOCK} --array $splitArray $(depCheck ${SORTARR}_${ZPADBLOCK}) ${SLSBIN}/contigsplit.sl ${sortOutput} ${ZPADBLOCK} | awk '{print $4}')
+		DEP_CS=$(sbatch $(dispatch "CS") -J CS_${SAMPLE}_${BLOCK} --array $splitArray $(depCheck ${SORTARR}_${BLOCK}) ${SLSBIN}/contigsplit.sl ${sortOutput} ${ZPADBLOCK} | awk '{print $4}')
 		if [ $? -ne 0 ] || [ "$DEP_CS" == "" ]; then
 			printf "FAILED!\n"
 			exit 1
@@ -340,7 +340,7 @@ function spoolMerge {
 	printf "SM: %-22s" "HaplotypeCaller XPAR1"
 	
 	if [ ! -e ${haploXPar1Output}.done ]; then
-		DEP_HCXPAR1=$(sbatch $(dispatch "HC") -J HC_${IDN}_${XPAR1} --array=1 $(depCheck ${DEP_GD}) ${SLSBIN}/haplotypecaller.sl  "${XPAR1}" | awk '{print $4}')
+		DEP_HCXPAR1=$(sbatch $(dispatch "HC") -J HC_${IDN}_XPAR1 --array=23 $(depCheck ${DEP_GD}) ${SLSBIN}/haplotypecaller.sl  "${XPAR1}" | awk '{print $4}')
 		if [ $? -ne 0 ] || [ "$DEP_HCXPAR1" == "" ]; then
 			printf "FAILED!\n" 
 			exit 1
@@ -354,7 +354,7 @@ function spoolMerge {
 	printf "SM: %-22s" "HaplotypeCaller TRUEX"
 	
 	if [ ! -e ${haploTRUEXOutput}.done ]; then
-		DEP_HCTRUEX=$(sbatch $(dispatch "HC") -J HC_${IDN}_${TRUEX} --array=1 $(depCheck ${DEP_GD}) ${SLSBIN}/haplotypecaller.sl "${TRUEX}" | awk '{print $4}')
+		DEP_HCTRUEX=$(sbatch $(dispatch "HC") -J HC_${IDN}_TRUEX --array=23 $(depCheck ${DEP_GD}) ${SLSBIN}/haplotypecaller.sl "${TRUEX}" | awk '{print $4}')
 		if [ $? -ne 0 ] || [ "$DEP_HCTRUEX" == "" ]; then
 			printf "FAILED!\n"
 			exit 1
@@ -368,7 +368,7 @@ function spoolMerge {
 	printf "SM: %-22s" "HaplotypeCaller XPAR2"
 	
 	if [ ! -e ${haploXPar2Output}.done ]; then
-		DEP_HCXPAR2=$(sbatch $(dispatch "HC") -J HC_${IDN}_${XPAR2} --array=1 $(depCheck ${DEP_GD}) ${SLSBIN}/haplotypecaller.sl "${XPAR2}" | awk '{print $4}')
+		DEP_HCXPAR2=$(sbatch $(dispatch "HC") -J HC_${IDN}_XPAR2 --array=23 $(depCheck ${DEP_GD}) ${SLSBIN}/haplotypecaller.sl "${XPAR2}" | awk '{print $4}')
 		if [ $? -ne 0 ] || [ "$DEP_HCXPAR2" == "" ]; then
 			printf "FAILED!\n"
 			exit 1
@@ -382,7 +382,7 @@ function spoolMerge {
 	printf "SM: %-22s" "HaplotypeCaller Y"
 	
 	if [ ! -e ${haploYOutput}.done ]; then
-		DEP_HCY=$(sbatch $(dispatch "HC") -J HC_${IDN}_Y --array=1 $(depCheck ${DEP_GD}) ${SLSBIN}/haplotypecaller.sl "Y" | awk '{print $4}')
+		DEP_HCY=$(sbatch $(dispatch "HC") -J HC_${IDN}_Y --array=24 $(depCheck ${DEP_GD}) ${SLSBIN}/haplotypecaller.sl "Y" | awk '{print $4}')
 		if [ $? -ne 0 ] || [ "$DEP_HCY" == "" ]; then
 			printf "FAILED!\n"
 			exit 1

@@ -20,8 +20,8 @@ echo "$HEADER: ${INPUT} -> ${OUTPUT}"
 date
 
 # Make sure input and target folders exists and that output file does not!
-if ! inFile;  then exit 10; fi
-if ! outFile; then exit 10; fi
+if ! inFile;  then exit $EXIT_IO; fi
+if ! outFile; then exit $EXIT_IO; fi
 
 GATK_PROC=BaseRecalibrator
 GATK_ARGS="-T ${GATK_PROC} \
@@ -38,7 +38,7 @@ echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
 	cmdFailed
-	exit 15
+	exit $EXIT_PR
 fi
 
 touch ${OUTPUT}.done

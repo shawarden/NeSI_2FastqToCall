@@ -22,10 +22,10 @@ echo "$HEADER: ${INPUT} + ${BQSR} -> ${OUTPUT}"
 date
 
 # Make sure input and target folders exists and that output file does not!
-if ! inFile;  then exit 10; fi
-if ! (INPUT=$(echo $BQSR); inFile); then exit 10; fi
-if ! outDirs; then exit 10; fi
-if ! outFile; then exit 10; fi
+if ! inFile;  then exit $EXIT_IO; fi
+if ! (INPUT=$(echo $BQSR); inFile); then exit $EXIT_IO; fi
+if ! outDirs; then exit $EXIT_IO; fi
+if ! outFile; then exit $EXIT_IO; fi
 
 GATK_PROC=PrintReads
 GATK_ARGS="-T ${GATK_PROC} \
@@ -41,11 +41,11 @@ echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
 	cmdFailed
-	exit 15
+	exit $EXIT_PR
 fi
 
 # Move output to final location
-if ! finalOut; then exit 20; fi
+if ! finalOut; then exit $EXIT_MV; fi
 
 rm ${INPUT} ${INPUT%.bam}.bai ${INPUT%.bam}.metrics && echo "$HEADER: Purged input files!"
 

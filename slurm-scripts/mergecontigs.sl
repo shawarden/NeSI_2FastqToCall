@@ -25,7 +25,7 @@ numcontigMerBlocks=$(echo "$contigMerBlocks" | wc -l)
 if [ $numcontigMerBlocks -eq 0 ]; then
 	echo "$HEADER: Merge contig ${CONTIG} contains $numcontigMerBlocks files!"
 #	scriptFailed
-	exit 10
+	exit $EXIT_IO
 else
 	echo $HEADER: Merge contig ${CONTIG} will run $numcontigMerBlocks files: \"${contigMerBlocks}\"
 fi
@@ -35,18 +35,18 @@ for INPUT in ${contigMerBlocks}; do
 	if inFile; then
 		mergeList="${mergeList} I=${INPUT}"
 	else
-		exit 10
+		exit $EXIT_IO
 	fi
 done
 
 if [ "$mergeList" == "" ]; then
 	echo "$HEADER: No inputs defined!"
-	exit 10
+	exit $EXIT_IO
 fi
 
 # Make sure input and target folders exists and that output file does not!
-if ! outDirs; then exit 10; fi
-if ! outFile; then exit 10; fi
+if ! outDirs; then exit $EXIT_IO; fi
+if ! outFile; then exit $EXIT_IO; fi
 
 PIC_ARGS="SORT_ORDER=coordinate \
 USE_THREADING=true \
@@ -62,11 +62,11 @@ echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
 	cmdFailed
-	exit 15
+	exit $EXIT_PR
 fi
 
 # Move output to final location
-if ! finalOut; then exit 20; fi
+if ! finalOut; then exit $EXIT_MV; fi
 
 # Get list of sorted blocks and add them to the delete pile!
 # Don't delete the .done files through.

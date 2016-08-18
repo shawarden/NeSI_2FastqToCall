@@ -20,6 +20,18 @@
 # Update history
 
 
+## 2016-08-18
+
+### Changed
+- Increase submissions delay to 6 seconds per submissions to hard block at 600/hour submissions limit of 6 seconds per submissions instead of 20/minutes's 3 seconds per job submission.
+- SIGTERM trap incorporated into storeMetrics output as EXIT trap is called even on error exit.
+- Reduced ContigSplit from 2 cores to 1.
+
+### Fixed
+- tieTaskDeps incorrectly unlocking child array elements repeatedly if current cycle found no match.
+- ReadSplit not stopping on block spin-off failure.
+
+
 ## 2016-08-17
 
 ### Changed

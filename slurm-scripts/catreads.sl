@@ -46,7 +46,3 @@ if ! ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}; then
 	echo "$HEADER: Transfer failed!"
 	exit $EXIT_TF
 fi
-
-storeMetrics
-
-

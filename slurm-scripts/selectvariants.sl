@@ -43,6 +43,5 @@ if ! finalOut; then exit $EXIT_MV; fi
 
 touch ${OUTPUT}.done
 
-sbatch -J SFP_${IDN} ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}
+${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}
 
-storeMetrics

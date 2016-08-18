@@ -84,7 +84,10 @@ function splitByReadGroupAndCompress {
 				# Check if we are writing blocks or if we are not writing blocks then if read is 1, check for an alignment run.
 				if (writeBlock || readNumber=="R1") {
 					# Spawn alignment if the next block in the sequence exists for both reads.
-					system("sleep 1s; "pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "blockCount" "alignArray" "sortArray)
+					if (system("pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "blockCount" "alignArray" "sortArray) != 0) {
+						print outHeader": CheckBlock failure! Aborting."
+						exit 1
+					}
 				}
 				
 				if (writeBlock) {
@@ -181,5 +184,3 @@ fi
 #rm ${INPUT} && echo "$HEADER: Purged input file!"
 
 touch ${SAMPLE}_R${READNUM}_split.done
-
-storeMetrics run

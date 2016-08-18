@@ -13,10 +13,10 @@ READ2=${FASTQS}/${3}
 PLATFORM=${4}
 LOCATION=${5}
 
-printf "%-9s%s\n" "SampleID" "${SAMPLE}"
-printf "%-9s%s\n" "Read 1" "${READ1}"
-printf "%-9s%s\n" "Read 2" "${READ2}"
-printf "%-9s%s\n" "PLATFORM" "${PLATFORM}"
+printf "%-12s%s\n" "SampleID" "${SAMPLE}"
+printf "%-12s%s\n" "Read 1" "${READ1}"
+printf "%-12s%s\n" "Read 2" "${READ2}"
+printf "%-12s%s\n" "PLATFORM" "${PLATFORM}"
 
 IDN=$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $1}')
 DNA=$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $2}')
@@ -44,7 +44,7 @@ date '+%Y%m%d_%H%M%S' > ${WORK_PATH}/${IDN}/starttime.txt
 
 # Purge existing merge dependencies, just in case!
 if [ -d ${SAMPLE_PATH}/mergeDeps ]; then
-	printf "%-9s%s\n" "Purging" "mergeDep!"
+	printf "%-12s%s\n" "Purging" "mergeDep!"
 	rm -r ${SAMPLE_PATH}/mergeDeps
 fi
 
@@ -71,27 +71,27 @@ done
 
 # Dispatch alignemnt & sort arrays.
 # Alignemnt array doesn't have an dependency yet since ReadSplit needs to know what the aligner's JobID is to update it.
-printf "%-9s " "Dispatch (Align"
+printf "%-12sAlign " "Dispatch"
 DEP_PA=$(sbatch $(dispatch "PA") -J PA_${SAMPLE} --begin=now+72hour --array=$alignArray ${SLSBIN}/align.sl ${SAMPLE} | awk '{print $4}')
 if [ $? -ne 0 ] || [ "$DEP_PA" == "" ]; then
-	printf "FAILED!"
+	printf "FAILED!\n"
 	exit 1
 else
-	printf "%sx%-3d " "${DEP_PA}" $(splitByChar "$alignArray" "," | wc -w)
+	printf "%sx%-4d\n" "${DEP_PA}" $(splitByChar "$alignArray" "," | wc -w)
 fi
 
 # Does ReadSplit needs know Sort's JobID for the same reason?
-printf "%s " "-> Sorter"
+printf "%-12sSorter " "Dispatch"
 DEP_SS=$(sbatch $(dispatch "SS") -J SS_${SAMPLE} $(depCheck ${DEP_PA}) --array=$sortArray ${SLSBIN}/sort.sl ${SAMPLE} | awk '{print $4}')
 if [ $? -ne 0 ] || [ "$DEP_SS" == "" ]; then
-	printf "FAILED!"
+	printf "FAILED!\n"
 	exit 1
 else
 	tieTaskDeps "$sortArray" "$DEP_SS" "$alignArray" "$DEP_PA"
-	printf "%sx%-3d) " "${DEP_SS}" $(splitByChar "$sortArray" "," | wc -w)
+	printf "%sx%-4d)\n" "${DEP_SS}" $(splitByChar "$sortArray" "," | wc -w)
 fi
 
-printf "%s " "<- Split Reads"
+printf "%-12sReadSplit " "Dispatch"
 
 # Split read 1 and 2 into chunks
 splitReadArray=""
@@ -110,14 +110,14 @@ fi
 sizeString=" kMGTEPYZ"
 sizeBlock=0
 readSize=$(($(ls -la ${READ1} | awk '{print $5}') + $(ls -la ${READ2} | awk '{print $5}')))
-readSize=$(($1 + $2))
 while [ $(echo "$readSize / 1024 > 0" | bc) -eq 1 ]; do
-	echo $readSize
+	#printf "%-12s %.0f%s\n" "Read size" $readSize $(echo ${sizeString:${sizeBlock}:1}Bytes | sed -e 's/ //g')
 	readSize=$(echo "$readSize / 1024" | bc -l)
 	sizeBlock=$((sizeBlock+1))
 done
 
 readSize=$(echo $(printf "%.0f" $readSize)${sizeString:${sizeBlock}:1}B | sed -e 's/ //g')
+#printf "%-12s $s\n" "Read size" $readSize
 
 if [ "$splitReadArray" != "" ]; then
 	DEP_SR=$(sbatch $(dispatch "RS") -J RS_${SAMPLE}_${readSize} -a $splitReadArray ${SLSBIN}/readsplit.sl ${SAMPLE} ${READ1} ${READ2} ${DEP_PA} ${DEP_SS} | awk '{print $4}')

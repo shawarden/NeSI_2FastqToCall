@@ -68,5 +68,3 @@ fi
 if ! finalOut; then exit $EXIT_MV; fi
 
 touch ${OUTPUT}.done
-
-storeMetrics

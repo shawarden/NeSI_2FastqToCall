@@ -65,5 +65,3 @@ if ! ${CMD}; then
 fi
 
 touch ${OUTPUT}.done
-
-storeMetrics

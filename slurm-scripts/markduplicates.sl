@@ -47,5 +47,3 @@ if ! finalOut; then exit $EXIT_MV; fi
 rm ${INPUT} ${INPUT%.bam}.bai && echo "$HEADER: Purged input files!"
 
 touch ${OUTPUT}.done
-
-storeMetrics

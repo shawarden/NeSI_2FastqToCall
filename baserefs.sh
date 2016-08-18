@@ -86,7 +86,11 @@ export FASTQ_MAXJOBS=100		# Maximum number of alignment & sort array elements.
 export FASTQ_MAXJOBZ=99	#$(($FASTQ_MAXJOBS - 1))	# Maximum number of alignment & sort array elements starting from 0.
 export FASTQ_MAXZPAD=4	#${#FASTQ_MAXJOBS}	# Number of characters to pad to blocks.
 
-export MAX_JOB_RATE=1			# Minimum number of seconds between job submissions.
+# Minimum number of seconds between job submissions
+# 200 submissions/10minutes = 20 submissions/minute = 3 seconds/submission.
+# 600 submissions/60minutes = 10 submissions/minute = 6 seconds/submission.
+# 5000 total jobs (including all array elements.
+export MAX_JOB_RATE=6
 
 
 ##########################
@@ -95,7 +99,7 @@ export MAX_JOB_RATE=1			# Minimum number of seconds between job submissions.
 declare -A SB
 SB[ACCOUNT]=uoo00032
 SB[MAILUSER]=sam.hawarden@otago.ac.nz
-SB[MAILTYPE]=FAIL
+SB[MAILTYPE]="ARRAY_TASKS,TIME_LIMIT_90,FAIL"
 
 # MWT: Calibrated Max Wall-Time
 # MPC: Memory per Cores
@@ -127,7 +131,7 @@ SB[SS,CPT]=4
 # ContigSplit
 SB[CS,MWT]=30
 SB[CS,MPC]=2048
-SB[CS,CPT]=2
+SB[CS,CPT]=1
 
 # MergeContigs
 SB[MC,MWT]=120
@@ -365,56 +369,61 @@ export -f scriptFailed
 #######################
 # Output runtime metrics to a log file.
 #######################
-function storeMetrics {
-	case $HEADER in
-		RS|PA|SS|CS)
-			BACKDIR="../"
-			;;
-		*)
-			BACKDIR=""
-	esac
-	
-	printf \
-		"%s\t%s\t%dc\t%1.1fGHz\t%dGB\t%s\n" \
-		"$(date '+%Y-%m-%d %H:%M:%S')" \
-		"${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne ":$SLURM_ARRAY_TASK_ID")" \
-		${SLURM_JOB_CPUS_PER_NODE} \
-		$(echo "$(lscpu | grep "CPU MHz" | awk '{print $3}') / 1000" | bc -l) \
-		$(((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU}) / 1024)) \
-		$(printHMS $SECONDS) | \
-		tee -a ${BACKDIR}metrics.txt | \
-		tee -a ${HOME}/metrics.txt >> ${HOME}/$(date '+%Y_%m_%d').metrics.txt
-}
-export -f storeMetrics
-
-trap "echo EXIT" EXIT
-
-#######################
-# Output runtime metrics to a log file.
-#######################
 function failMetrics {
-	case $HEADER in
-		RS|PA|SS|CS)
-			BACKDIR="../"
-			;;
-		*)
-			BACKDIR=""
-	esac
+	SIGTERM="SIGTERM"
 	
-	printf \
-		"%s\t%s\t%dc\t%1.1fGHz\t%dGB\t%s\tSIGTERM\n" \
-		"$(date '+%Y-%m-%d %H:%M:%S')" \
-		"${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne ":$SLURM_ARRAY_TASK_ID")" \
-		${SLURM_JOB_CPUS_PER_NODE} \
-		$(echo "$(lscpu | grep "CPU MHz" | awk '{print $3}') / 1000" | bc -l) \
-		$(((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU}) / 1024)) \
-		$(printHMS $SECONDS) | \
-		tee -a ${BACKDIR}metrics.txt | \
-		tee -a ${HOME}/metrics.txt >> ${HOME}/$(date '+%Y_%m_%d').metrics.txt
+#	case $HEADER in
+#		RS|PA|SS|CS)
+#			BACKDIR="../"
+#			;;
+#		*)
+#			BACKDIR=""
+#	esac
+#	
+#	printf \
+#		"%s\t%s\t%dc\t%1.1fGHz\t%dGB\t%s\tSIGTERM\n" \
+#		"$(date '+%Y-%m-%d %H:%M:%S')" \
+#		"${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne ":$SLURM_ARRAY_TASK_ID")" \
+#		${SLURM_JOB_CPUS_PER_NODE} \
+#		$(echo "$(lscpu | grep "CPU MHz" | awk '{print $3}') / 1000" | bc -l) \
+#		$(((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU}) / 1024)) \
+#		$(printHMS $SECONDS) | \
+#		tee -a ${BACKDIR}metrics.txt | \
+#		tee -a ${HOME}/metrics.txt >> ${HOME}/$(date '+%Y_%m_%d').metrics.txt
 }
 export -f failMetrics
 
 trap "failMetrics" SIGTERM
+
+#######################
+# Output runtime metrics to a log file.
+#######################
+function storeMetrics {
+	if [ "$SLURM_JOB_NAME" != "" ] && [ "$HEADER" != "" ] ; then
+		case $HEADER in
+			RS|PA|SS|CS)
+				BACKDIR="../"
+				;;
+			*)
+				BACKDIR=""
+		esac
+		
+		printf \
+			"%s\t%s\t%dc\t%1.1fGHz\t%dGB\t%s%s\n" \
+			"$(date '+%Y-%m-%d %H:%M:%S')" \
+			"${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne ":$SLURM_ARRAY_TASK_ID")" \
+			${SLURM_JOB_CPUS_PER_NODE} \
+			$(echo "$(lscpu | grep "CPU MHz" | awk '{print $3}') / 1000" | bc -l) \
+			$(((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU}) / 1024)) \
+			$(printHMS $SECONDS) \
+			$([ "$SIGTERM" != "" ] && echo -ne "	SIGTERM" || echo -ne "") | \
+			tee -a ${BACKDIR}metrics.txt | \
+			tee -a ${HOME}/metrics.txt >> ${HOME}/$(date '+%Y_%m_%d').metrics.txt
+	fi
+}
+export -f storeMetrics
+
+trap "storeMetrics" EXIT
 
 #####################
 # Return a string with a new item on the end
@@ -469,22 +478,24 @@ function tieTaskDeps {
 	
 	if [ "$childArray" != "" ] && [ "$parentArray" != "" ]; then
 		# Both arrays contain something.
-		
-		# Cycle through child array for elements
+		# Cycle through child array elements
 		for i in $(splitByChar "$childArray" ","); do
-			# Cycle through parent array for matching elements.
+			elementMatched=0
+			# Cycle through parent array elements.
 			for j in $(splitByChar "$parentArray" ","); do
 				if [ "$i" == "$j" ]; then
-					# Match found.
+					# Matching element found. Tie child element to parent element.
 #					printf " T[%s->%s] " "${childJobID}_$i" "${parentJobID}_$j"
 					scontrol update JobId=${childJobID}_$i Dependency=afterok:${parentJobID}_$j
-					# TimeLimit=
-				else
-					# No match found. Parent array does not have this element so it is finished.
-					# Unlock this element from dependencies.
-					scontrol update JobId=${childJobID}_$i Dependency=
+					elementMatched=1
 				fi
 			done
+			if [ $elementMatched -eq 0 ]; then
+				# No matching element found in parent array.
+				# Release child element from entire parent array.
+				scontrol update JobId=${childJobID}_$i Dependency=
+			fi
+			tickOver
 		done
 	fi
 }
@@ -546,6 +557,7 @@ export -f finalOut
 ####################
 function cmdFailed {
 	echo "$HEADER: [$SLURM_JOB_NAME:$SLURM_JOBID:$SLURM_ARRAY_TASK_ID] failed with $?!"
+	SIGTERM="FAIL"
 }
 export -f cmdFailed
 
@@ -595,22 +607,28 @@ function jobWait {
 	if [ -e ${PROJECT}/submitted.log ]; then
 		lastJob=$(cat ${PROJECT}/submitted.log)
 		if [ "$lastJob" != "" ]; then
-			>&2 printf " "
 			while [ $(($timeNow - $lastJob)) -lt $MAX_JOB_RATE ]; do
-				case "$TICKER" in
-					"|") TICKER="/" ;;
-					"/") TICKER="-" ;;
-					"-") TICKER="\\" ;;
-					*) TICKER="|" ;;
-				esac
-				
-				>&2 printf "\b%s" "$TICKER"
+				tickOver
 				
 				sleep 0.25s
 				timeNow=$(date +%s)
 			done
-			>&2 printf "\b"
 		fi
 	fi
 	echo $timeNow > ${PROJECT}/submitted.log
 }
+
+###################
+# Visual ticker
+###################
+function tickOver {
+	case "$TICKER" in
+		"|") TICKER="/" ;;
+		"/") TICKER="-" ;;
+		"-") TICKER="\\" ;;
+		*) TICKER="|" ;;
+	esac
+	
+	>&2 printf "%s\b" "$TICKER"
+}
+export -f tickOver

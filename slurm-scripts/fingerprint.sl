@@ -45,5 +45,3 @@ if ! finalOut; then exit $EXIT_MV; fi
 touch ${OUTPUT}.done
 
 sbatch -J FPS_${IDN} ${SLSBIN}/selectvariants.sl ${OUTPUT} ${3}
-
-storeMetrics

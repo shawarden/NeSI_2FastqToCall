@@ -169,5 +169,3 @@ echo "Y_CHROMOSOMES=$yChromes" | tee -a ${OUTPUT}
 touch ${OUTPUT}.done
 
 ${SLSBIN}/transfer.sl ${IDN} coverage.sh ${IDN}.coverage.sh
-
-storeMetrics

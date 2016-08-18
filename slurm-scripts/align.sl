@@ -65,5 +65,3 @@ if ! finalOut; then exit $EXIT_MV; fi
 rm ${READ1} ${READ2} && echo "$HEADER: Purged read files!"
 
 touch ${OUTPUT}.done
-
-storeMetrics run

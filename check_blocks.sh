@@ -29,7 +29,7 @@ function spoolAlign {
 	mkdir -p $(dirname ${alignOutput})
 	mkdir -p $(dirname ${sortOutput})
 	
-	printf "SA: Alignment "
+	printf "SA: Alignment   "
 	
 	if [ ! -e ${alignOutput}.done ]; then
 		#DEP_PA=$(sbatch -J PA_${SAMPLE}_${ZPADBLOCK} ${SLSBIN}/align.sl ${SAMPLE} ${READGROUP} ${ZPADBLOCK} ${alignOutput} | awk '{print $4}')
@@ -39,13 +39,13 @@ function spoolAlign {
 			printf "FAILED!\n"
 			exit 1
 		else
-			printf "%s " ${ALIGNARR}_${BLOCK}
+			printf "%s\n" ${ALIGNARR}_${BLOCK}
 		fi
 	else
-		printf "done "
+		printf "done\n"
 	fi
 	
-	printf "%s " "-> SortSAM"
+	printf "SA: SortSAM     "
 	
 	if [ ! -e ${sortOutput}.done ]; then
 		#DEP_SS=$(sbatch -J SS_${SAMPLE}_${ZPADBLOCK} $(depCheck ${DEP_PA}) ${SLSBIN}/sortsam.sl ${SAMPLE} ${alignOutput} ${sortOutput} | awk '{print $4}')
@@ -55,13 +55,13 @@ function spoolAlign {
 			printf "FAILED!\n"
 			exit 1
 		else
-			printf "%s " ${SORTARR}_${BLOCK}
+			printf "%s\n" ${SORTARR}_${BLOCK}
 		fi
 	else
-		printf "done "
+		printf "done\n"
 	fi
 	
-	printf "%s " "-> ContigSplit"
+	printf "SA: ContigSplit "
 	
 	splitArray=""
 	
@@ -85,16 +85,14 @@ function spoolAlign {
 			printf "FAILED!\n"
 			exit 1
 		else
-			printf "%sx%-2d" "$DEP_CS" $(splitByChar "$splitArray" "," | wc -w)
+			printf "%sx%-2d [%s]\n" "$DEP_CS" $(splitByChar "$splitArray" "," | wc -w) "$splitArray"
 		fi
 		mkdir -p mergeDeps
 		echo "${DEP_CS}" > mergeDeps/merge_${DEP_CS}.sh
 	else
 		# No array elements define. They're all done!
-		printf "done "
+		printf "done\n"
 	fi
-	
-	printf "\n"
 	
 	if [ "$BLOCK" == "$NEXT" ]; then	# This is the final chunk so we can spool up the next step
 		echo "CB: $BLOCK of $NEXT block$([ $NEXT -gt 1 ] && echo -ne "s") completed!"
@@ -141,7 +139,7 @@ function spoolMerge {
 		rm $file
 	done
 	numDeps=$(echo $mergeDepFiles | wc -w)
-	echo "CB: Merge Dependencies: ${numDeps}/${NUMCONTIGS}:[${mergeDeps}]"
+	echo "CB: Merge Dependencies: ${numDeps}/${NEXT}:[${mergeDeps}]"
 	
 	mergeArray=""
 	markArray=""
@@ -218,7 +216,7 @@ function spoolMerge {
 			printf "FAILED!\n"
 			exit 1
 		else
-			printf "%sx%-2d\n" "$DEP_CM" $(splitByChar "$mergeArray" "," | wc -w)
+			printf "%sx%-2d [%s]\n" "$DEP_CM" $(splitByChar "$mergeArray" "," | wc -w) "$mergeArray"
 		fi
 	else
 		printf "done\n"
@@ -235,7 +233,7 @@ function spoolMerge {
 			# Tie each task to the matching task in the previous array.
 			tieTaskDeps "$markArray" "$DEP_MD" "$mergeArray" "$DEP_CM"
 			#scontrol update JobId=${DEP_MD} StartTime=now+0
-			printf "%sx%02d\n" "$DEP_MD" $(splitByChar "$markArray" "," | wc -w)
+			printf "%sx%-2d [%s]\n" "$DEP_MD" $(splitByChar "$markArray" "," | wc -w) "$markArray"
 		fi
 	else
 		printf "done\n"
@@ -252,7 +250,7 @@ function spoolMerge {
 			# Tie each task to the matching task in the previous array.
 			tieTaskDeps "$baseArray" "$DEP_BR" "$markArray" "$DEP_MD"
 			#scontrol update JobId=${DEP_BR} StartTime=now+0
-			printf "%sx%-2d\n" "$DEP_BR" $(splitByChar "$baseArray" "," | wc -w)
+			printf "%sx%-2d [%s]\n" "$DEP_BR" $(splitByChar "$baseArray" "," | wc -w) "$baseArray"
 		fi
 	else
 		printf "done\n"
@@ -269,7 +267,7 @@ function spoolMerge {
 			# Tie each task to the matching task in the previous array.
 			tieTaskDeps "$printArray" "$DEP_PR" "$baseArray" "$DEP_BR"
 			#scontrol update JobId=${DEP_PR} StartTime=now+0
-			printf "%sx%-2d\n" "$DEP_PR" $(splitByChar "$printArray" "," | wc -w)
+			printf "%sx%-2d [%s]\n" "$DEP_PR" $(splitByChar "$printArray" "," | wc -w) "$printArray"
 		fi
 	else
 		printf "done\n"
@@ -286,7 +284,7 @@ function spoolMerge {
 			# Tie each task to the matching task in the previous array.
 			tieTaskDeps "$depthArray" "$DEP_DC" "$printArray" "$DEP_PR"
 			#scontrol update JobId=${DEP_DC} StartTime=now+0
-			printf "%sx%-2d\n" "$DEP_DC" $(splitByChar "$depthArray" "," | wc -w)
+			printf "%sx%-2d [%s]\n" "$DEP_DC" $(splitByChar "$depthArray" "," | wc -w) "$depthArray"
 		fi
 	else
 		printf "done\n"
@@ -317,7 +315,7 @@ function spoolMerge {
 			# Tie each task to the matching task in the previous array.
 			tieTaskDeps "$haploArray" "$DEP_HC" "$depthArray" "$DEP_PR"
 			#scontrol update JobId=${DEP_HC} StartTime=now+0
-			printf "%sx%-2d\n" "$DEP_HC" $(splitByChar "$haploArray" "," | wc -w)
+			printf "%sx%-2d [%s]\n" "$DEP_HC" $(splitByChar "$haploArray" "," | wc -w) "$haploArray"
 		fi
 	else
 		printf "done\n"

@@ -27,7 +27,7 @@ if ! inFile;  then exit $EXIT_IO; fi
 if ! outDirs; then exit $EXIT_IO; fi
 if ! outFile; then exit $EXIT_IO; fi
 
-CMD="${SAMTOOLS} view -bh -@ 1 ${INPUT} ${CONTIG} > ${JOB_TEMP_DIR}/${OUTPUT}"
+CMD="${SAMTOOLS} view -bh ${INPUT} ${CONTIG} > ${JOB_TEMP_DIR}/${OUTPUT}"
 echo "$HEADER: ${CMD}" | tee -a ../commands.txt
 
 if ! eval ${CMD}; then
@@ -39,5 +39,3 @@ fi
 if ! finalOut; then exit $EXIT_MV; fi
 
 touch ${OUTPUT}.done
-
-storeMetrics run

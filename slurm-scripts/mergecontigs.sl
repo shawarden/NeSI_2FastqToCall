@@ -80,5 +80,3 @@ fi
 rm ${contigMerBlocks} && echo "$HEADER: Purging $numcontigMerBlocks contig merge blocks!"
 
 touch ${OUTPUT}.done
-
-storeMetrics

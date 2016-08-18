@@ -49,5 +49,3 @@ if ! finalOut; then exit $EXIT_MV; fi
 rm ${INPUT} && echo "$HEADER: Purged aligned files!"
 
 touch ${OUTPUT}.done
-
-storeMetrics run

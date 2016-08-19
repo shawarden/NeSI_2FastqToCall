@@ -71,7 +71,7 @@ done
 
 # Dispatch alignemnt & sort arrays.
 # Alignemnt array doesn't have an dependency yet since ReadSplit needs to know what the aligner's JobID is to update it.
-printf "%-12sAlign " "Dispatch"
+printf "%-12s%-10s" "Dispatch" "Aligner"
 DEP_PA=$(sbatch $(dispatch "PA") -J PA_${SAMPLE} --begin=now+72hour --array=$alignArray ${SLSBIN}/align.sl ${SAMPLE} | awk '{print $4}')
 if [ $? -ne 0 ] || [ "$DEP_PA" == "" ]; then
 	printf "FAILED!\n"
@@ -81,17 +81,17 @@ else
 fi
 
 # Does ReadSplit needs know Sort's JobID for the same reason?
-printf "%-12sSorter " "Dispatch"
+printf "%-12s%-10s" "Dispatch" "Sorter"
 DEP_SS=$(sbatch $(dispatch "SS") -J SS_${SAMPLE} $(depCheck ${DEP_PA}) --array=$sortArray ${SLSBIN}/sort.sl ${SAMPLE} | awk '{print $4}')
 if [ $? -ne 0 ] || [ "$DEP_SS" == "" ]; then
 	printf "FAILED!\n"
 	exit 1
 else
 	tieTaskDeps "$sortArray" "$DEP_SS" "$alignArray" "$DEP_PA"
-	printf "%sx%-4d)\n" "${DEP_SS}" $(splitByChar "$sortArray" "," | wc -w)
+	printf "%sx%-4d\n" "${DEP_SS}" $(splitByChar "$sortArray" "," | wc -w)
 fi
 
-printf "%-12sReadSplit " "Dispatch"
+printf "%-12s%-10s" "Dispatch" "ReadSplit"
 
 # Split read 1 and 2 into chunks
 splitReadArray=""
@@ -125,7 +125,7 @@ if [ "$splitReadArray" != "" ]; then
 		printf "FAILED!\n"
 		exit 1
 	else
-		printf "%s\n" "${DEP_SR}"
+	printf "%sx%-1d [%s]\n" "${DEP_SR}" $(splitByChar "$splitReadArray" "," | wc -w) "$splitReadArray"
 		
 		# Now that we have the ReadSplit jobID, assign the entire Alignment array to it.
 		scontrol update JobID=${DEP_PA} StartTime=now Dependency=afterok:${DEP_SR}

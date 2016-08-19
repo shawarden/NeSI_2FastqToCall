@@ -6,7 +6,7 @@
 # include: "source /path/to/baserefs.sh" at the top of pretty much every script to import these values.
 ###########
 
-# Nerge exit codes from piped commands so any command that fails carries to $?
+# Merge exit codes from piped commands so any command that fails carries to $?
 set -o pipefail
 
 ##############
@@ -93,6 +93,30 @@ export FASTQ_MAXZPAD=4	#${#FASTQ_MAXJOBS}	# Number of characters to pad to block
 export MAX_JOB_RATE=6
 
 
+############################
+# Auto-retry function data #
+############################
+declare -A PROCESSLIST
+PROCESSLIST[RS]=readsplit
+PROCESSLIST[PA]=align
+PROCESSLIST[SS]=sort
+PROCESSLIST[CS]=contigsplit
+PROCESSLIST[MC]=mergecontigs
+PROCESSLIST[MD]=markduplicates
+PROCESSLIST[BR]=baserecalibrator
+PROCESSLIST[PR]=printreads
+PROCESSLIST[CR]=catreads
+PROCESSLIST[RI]=catreadsindex
+PROCESSLIST[DC]=depthofcoverage
+PROCESSLIST[GD]=coverage
+PROCESSLIST[HC]=haplotypecaller
+PROCESSLIST[CV]=catvariants
+PROCESSLIST[FP]=fingerprint
+PROCESSLIST[SV]=selectvariants
+PROCESSLIST[TF]=trasnfer
+
+export PROCESSLIST
+
 ##########################
 # Dispatch function data #
 ##########################
@@ -115,7 +139,7 @@ SB[BWTM]=1.25	# Base wall-time multiplier.
 
 # ReadSplit.
 SB[RS,MWT]=210
-SB[RS,MPC]=2048
+SB[RS,MPC]=512
 SB[RS,CPT]=8
 
 # PrimaryAlignment.
@@ -409,16 +433,28 @@ function storeMetrics {
 		esac
 		
 		printf \
-			"%s\t%s\t%dc\t%1.1fGHz\t%dGB\t%s%s\n" \
+			"%s\t%s\t%dc\t%1.1fGHz\t%dGB\t%s\t%s\n" \
 			"$(date '+%Y-%m-%d %H:%M:%S')" \
 			"${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne ":$SLURM_ARRAY_TASK_ID")" \
 			${SLURM_JOB_CPUS_PER_NODE} \
 			$(echo "$(lscpu | grep "CPU MHz" | awk '{print $3}') / 1000" | bc -l) \
 			$(((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU}) / 1024)) \
 			$(printHMS $SECONDS) \
-			$([ "$SIGTERM" != "" ] && echo -ne "	SIGTERM" || echo -ne "") | \
+			$([ "$SIGTERM" != "" ] && echo -ne "$SIGTERM" || echo -ne "") | \
 			tee -a ${BACKDIR}metrics.txt | \
 			tee -a ${HOME}/metrics.txt >> ${HOME}/$(date '+%Y_%m_%d').metrics.txt
+		
+#		if [ "$SIGTERM" == "SIGTERM" ]; then
+#			# This job is about to be killed due to timelimit. Resubmit itself with double the wall time.
+#			(
+#				SB[$HEADER,MWT]=$((${SB[$HEADER,MWT]} * 2))
+#				sbatch $(dispatch "$HEADER") \
+#					-J $SLURM_JOB_NAME \
+#					-A $SLURM_ARRAY_TASK_ID \
+#					${SLSBIN}/${PROCESSLIST[$HEADER]}.sl \
+#					${@}
+#			)
+#		fi
 	fi
 }
 export -f storeMetrics
@@ -522,9 +558,13 @@ export -f outDirs
 # Check if final output exists.
 ##################
 function outFile {
-	if [ -e ${OUTPUT} ]; then
-		echo "$HEADER: Output file \"${OUTPUT}\" already exists!"
-		exit 1
+	if [ -e ${OUTPUT}.done ]; then
+		# Done file exists. why are we here?
+		echo "$HEADER: Output file \"${OUTPUT}\" already completed!"
+		exit 0
+	elif [ -e ${OUTPUT} ]; then
+		# Output already exists for this process. Overwrite!
+		echo "$HEADER: Output file \"${OUTPUT}\" already exists. Overwriting!"
 	fi
 }
 export -f outFile

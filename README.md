@@ -20,6 +20,18 @@
 # Update history
 
 
+## 2016-08-19
+
+### Added
+- Automatic re-submission of job when SIGTERM detected as job is about to be killed for exceeding walltime. Resubmitted job has double the wall-time. This will still result in a failure unless I can dynamically update the subsequent process's dependency.
+
+### Changed
+- outFile function will exit cleanly if .done file exists. Will allow overwrite if output already exists but no done file found as likely interupted.
+
+### Fixed
+- ReadSplit awk system call missing a quote.
+
+
 ## 2016-08-18
 
 ### Changed
@@ -354,14 +366,6 @@
 - Cluster project.
 
 # To do
-
-## Full Array
-- Convert alignment and sorting into array jobs. This can be done by creating the jobs at the beginning but setting them to delayed start or to be dependent on the ReadSplit completing. Then tie up dependencies and release block when that alignment can start. Once ReadSplit is finished, purge the remaining alignemnt and sort array elements. If further array elements are set to specific dependencies then the purged jobs wont affect anything.
-
-## Bulk
-- Investigate job arrays to better manage bulk job sumission. NeSI queue length is ~5000 jobs. Each array job can contain 1000 sub jobs.
-- Can array jobs have unique dependencies?
-- Can you add jobs to an existing array?
 
 ## Minimal
 - Continue to work out minimum requirement to obtain 1 hour max runtimme per segment within high partition.

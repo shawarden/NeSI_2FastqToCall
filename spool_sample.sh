@@ -38,7 +38,10 @@ fi
 
 SAMPLE_PATH=${WORK_PATH}/${IDN}/${DNA}_${LIB}_${RUN}
 
-mkdir -p ${SAMPLE_PATH}/slurm
+if ! mkdir -p ${SAMPLE_PATH}/slurm; then
+	echo "Error creating output folder!"
+	exit 1
+fi
 
 date '+%Y%m%d_%H%M%S' > ${WORK_PATH}/${IDN}/starttime.txt
 

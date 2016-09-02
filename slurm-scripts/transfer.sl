@@ -33,11 +33,8 @@ then
 	exit 0
 fi
 
-if [ "${OUTPUT}" == "$(basename ${OUTPUT})" ]
-then
-	echo "$HEADER: Output file has not pathing. Storing in temp folder."
-	OUTPUT="~/projects/NeSI_Transfer/${IDN}/${OUTPUT}"
-fi
+# Strip pathing from output
+OUTPUT="~/projects/NeSI_Transfer/${IDN}/$(basename ${OUTPUT})"
 
 echo "$HEADER: ${INPUT} -> ${OUTPUT}"
 date

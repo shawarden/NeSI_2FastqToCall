@@ -47,6 +47,8 @@ export      BWA=${BIN}/bwa-0.7.15/bwa
 export   PICARD=${BIN}/picard-tools-2.5.0/picard.jar
 export SAMTOOLS=${BIN}/samtools-1.3.1/samtools
 export     GATK=${BIN}/GenomeAnalysisTK-nightly-2016-07-22-g8923599/GenomeAnalysisTK.jar
+export  ZIP_CMD=${BIN}/pigz-2.3.3/pigz_sb
+export  CAT_CMD="${ZIP_CMD} -cd"
 
 ######################
 # Contig shinanigans #
@@ -672,3 +674,33 @@ function tickOver {
 	>&2 printf "%s\b" "$TICKER"
 }
 export -f tickOver
+
+#######################
+# Condenses list of numbers to ranges
+#######################
+function condenseList {
+	echo "${@}," | \
+		sed "s/,/\n/g" | \
+		while read num
+		do
+		if [[ -z $first ]]
+		then
+			first=$num
+			last=$num
+			continue
+		fi
+		if [[ num -ne $((last + 1)) ]]
+		then
+			if [[ first -eq last ]]
+			then
+				echo $first
+			else
+				echo $first-$last
+			fi
+			first=$num
+			last=$num
+		else
+			: $((last++))
+		fi
+	done | paste -sd ","
+}

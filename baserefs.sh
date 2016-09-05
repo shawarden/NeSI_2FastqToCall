@@ -125,7 +125,7 @@ export PROCESSLIST
 declare -A SB
 SB[ACCOUNT]=uoo00032
 SB[MAILUSER]=sam.hawarden@otago.ac.nz
-SB[MAILTYPE]="ARRAY_TASKS,TIME_LIMIT_90,FAIL"
+SB[MAILTYPE]=FAIL
 
 # MWT: Calibrated Max Wall-Time
 # MPC: Memory per Cores
@@ -367,7 +367,7 @@ function printMinutes {
 			 SECS=$(echo $INPUT | cut -d':' -f3)
 			;;
 		*)
-			echo "WHAT?"
+			(echo "baserefs/printMinutes:WHAT?" 1>&2)
 			exit 1
 	esac
 	
@@ -598,8 +598,9 @@ export -f finalOut
 # Check if command filed
 ####################
 function cmdFailed {
-	echo "$HEADER: [$SLURM_JOB_NAME:$SLURM_JOBID:$SLURM_ARRAY_TASK_ID] failed with $?!"
-	SIGTERM="FAIL"
+	exitCode=$?
+	echo "$HEADER: [$SLURM_JOB_NAME:$SLURM_JOBID:$SLURM_ARRAY_TASK_ID] failed with $exitCode!"
+	SIGTERM="FAIL($exitCode)"
 }
 export -f cmdFailed
 
@@ -643,6 +644,8 @@ export -f jobStats
 
 ##################
 # Delays job submission based on project's previous submitted job.
+#
+# Limits submission rate to 1 job every MAX_JOB_RATE seconds.
 ##################
 function jobWait {
 	timeNow=$(date +%s)
@@ -677,6 +680,8 @@ export -f tickOver
 
 #######################
 # Condenses list of numbers to ranges
+#
+# 1,2,3,4,7,8,9,12,13,14 -> 1-3,4,7-9,12-14
 #######################
 function condenseList {
 	echo "${@}," | \
@@ -703,4 +708,24 @@ function condenseList {
 			: $((last++))
 		fi
 	done | paste -sd ","
+}
+
+#####################
+# Expand comma separated list of ranges to individual elements
+#
+# 1,3-5,8,10-12 -> 1,3,4,5,8,10,11,12
+#####################
+function expandList {
+	for f in ${1//,/ }; do
+		if [[ $f =~ - ]]; then
+			a+=( $(seq ${f%-*} 1 ${f#*-}) )
+		else
+			a+=( $f )
+		fi  
+	done
+	
+	a=${a[*]}
+	a=${a// /,}
+	
+	echo $a
 }

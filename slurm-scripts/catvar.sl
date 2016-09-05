@@ -54,7 +54,7 @@ rm $FILES && echo "$HEADER: Purged input files!"
 touch ${OUTPUT}.done
 
 # Start transfers for variants file and index.
-if ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}; then
+if ! ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}; then
 	echo "$HEADER: Transfer failed!"
 	exit $EXIT_TF
 fi

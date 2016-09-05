@@ -19,6 +19,15 @@
 
 # Update history
 
+## 2016-09-06
+
+### Added
+- Workflow pdf
+
+### Fixed
+- Missing ! for file transfer failure detection.
+- Missing error messages on job failure.
+
 
 ## 2016-08-19
 

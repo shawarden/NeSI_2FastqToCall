@@ -59,7 +59,7 @@ if ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}; then
 	exit $EXIT_TF
 fi
 
-if ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}.tbi; then
+if ! ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}.tbi; then
 	echo "$HEADER: Transfer index failed!"
 	exit $EXIT_TF
 fi

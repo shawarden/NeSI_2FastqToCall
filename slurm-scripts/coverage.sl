@@ -158,7 +158,7 @@ printf "%-20s %6s\n" "#Gender:" $calculatedgender | tee -a ${OUTPUT}
 if [ $xChromes -eq 0 ]; then
 	echo "#Unknown gender. Please check capture platform or sample contamination!" | tee -a ${OUTPUT}
 	echo "exit 1" >> ${OUTPUT}
-	exit 1
+	exit $EXIT_PR
 fi
 
 echo "" | tee -a ${OUTPUT}
@@ -168,4 +168,7 @@ echo "Y_CHROMOSOMES=$yChromes" | tee -a ${OUTPUT}
 
 touch ${OUTPUT}.done
 
-${SLSBIN}/transfer.sl ${IDN} coverage.sh ${IDN}.coverage.sh
+if ! ${SLSBIN}/transfer.sl ${IDN} coverage.sh ${IDN}.coverage.sh; then
+	echo "$HEADER: Transfer failed!"
+	exit $EXIT_TF
+fi

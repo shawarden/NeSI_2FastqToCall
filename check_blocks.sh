@@ -429,7 +429,7 @@ function spoolMerge {
 	else
 		printf "done\n"
 		
-		printf "SM: %21s" "Reads Index"
+		printf "SM: %-22s" "Reads Index"
 		
 		if [ ! -e ${catReadsOutput%.bam}.bai.done ]; then
 			DEP_RI=$(sbatch $(dispatch "RI") -J RI_${IDN} $(depCheck ${DEP_CR}) ${SLSBIN}/catreadsindex.sl ${catReadsOutput} ${catReadsOutput%.bam}.bai | awk '{print $4}')

@@ -39,7 +39,7 @@ CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} SortSam ${PIC_ARGS}
 echo "$HEADER: ${CMD}" | tee -a ../commands.txt
 
 if ! ${CMD}; then
-	cmdFailed
+	cmdFailed $?
 	exit $EXIT_PR
 fi
 

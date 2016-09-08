@@ -61,7 +61,7 @@ yCount=$(echo "scale=3; ($yCoverage/$aCoverage)/$YRat" | bc | sed 's/^\./0./')
 
 printf "%-20s %6s\n" "#Autosomal coverage:" ${aCoverage} | tee -a ${OUTPUT}
 printf "%-20s %6s\n" "#True-X coverage:" ${xCoverage} | tee -a ${OUTPUT}
-printf "%-20s %6s\n" "#True-y coverage:" ${yCoverage} | tee -a ${OUTPUT}
+printf "%-20s %6s\n" "#True-Y coverage:" ${yCoverage} | tee -a ${OUTPUT}
 printf "%-20s %6s\n" "#X:A ratio:" ${xaRatio} | tee -a ${OUTPUT}
 printf "%-20s %6s\n" "#Y:A ratio:" ${yaRatio} | tee -a ${OUTPUT}
 printf "%-20s %6s\n" "#Fractional X:" ${xCount} | tee -a ${OUTPUT}
@@ -78,8 +78,8 @@ yChromes=0
 # Count X and Y chromosomes that fall within boundries from whole numbers between 1 and 4: XXXXYYYY at most.
 for i in `seq 4`
 do
-	XinRange=$(echo "$i < $Xmax && $i > $Xmin" | bc)
-	YinRange=$(echo "$i < $Ymax && $i > $Ymin" | bc)
+	XinRange=$(echo "$i <= $Xmax && $i >= $Xmin" | bc)
+	YinRange=$(echo "$i <= $Ymax && $i >= $Ymin" | bc)
 	
 	if [ $XinRange -eq 1 ]
 	then

@@ -19,6 +19,15 @@
 
 # Update history
 
+## 2016-09-08
+
+### Fixed
+- Exit code not being passed correctly by cmdFail function.
+
+### Added
+- Test module for picard GatherVcfs as an alternative to CatVariants. Nul cahar issues abound!
+
+
 ## 2016-09-06
 
 ### Added

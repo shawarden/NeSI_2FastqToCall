@@ -200,7 +200,7 @@ echo "$HEADER: Best index is [${bestIndex}]"
 mkdir -p blocks
 
 if ! splitByReadGroupAndCompress; then
-	cmdFailed
+	cmdFailed $?
 	exit $EXIT_PR
 fi
 

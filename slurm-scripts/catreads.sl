@@ -31,7 +31,7 @@ CMD="$(which srun) ${SAMTOOLS} cat -h ${BAMHEAD} -o ${JOB_TEMP_DIR}/${OUTPUT} ${
 echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
-	cmdFailed
+	cmdFailed $?
 	exit $EXIT_PR
 fi
 

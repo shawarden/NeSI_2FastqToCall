@@ -43,7 +43,7 @@ CMD="ssh globus transfer --encrypt --perf-cc 4 --perf-p 8 --label \"${LABEL}\" -
 echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
-	cmdFailed
+	cmdFailed $?
 	exit $EXIT_PR
 fi
 

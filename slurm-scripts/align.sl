@@ -55,7 +55,7 @@ CMD="${BWA} mem -M -t ${SLURM_JOB_CPUS_PER_NODE} -R @RG'\t'$RG_ID'\t'$RG_PL'\t'$
 echo "$HEADER: ${CMD}" | tee -a ../commands.txt
 
 if ! eval ${CMD}; then
-	cmdFailed
+	cmdFailed $?
 	exit $EXIT_PR
 fi
 

@@ -598,7 +598,7 @@ export -f finalOut
 # Check if command filed
 ####################
 function cmdFailed {
-	exitCode=$?
+	exitCode=$1
 	echo "$HEADER: [$SLURM_JOB_NAME:$SLURM_JOBID:$SLURM_ARRAY_TASK_ID] failed with $exitCode!"
 	SIGTERM="FAIL($exitCode)"
 }

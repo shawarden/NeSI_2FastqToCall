@@ -31,7 +31,7 @@ CMD="${SAMTOOLS} view -bh ${INPUT} ${CONTIG} > ${JOB_TEMP_DIR}/${OUTPUT}"
 echo "$HEADER: ${CMD}" | tee -a ../commands.txt
 
 if ! eval ${CMD}; then
-	cmdFailed
+	cmdFailed $?
 	exit $EXIT_PR
 fi
 

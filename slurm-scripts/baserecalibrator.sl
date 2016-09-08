@@ -37,7 +37,7 @@ CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${GATK} ${GATK_ARGS} -I ${INP
 echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
-	cmdFailed
+	cmdFailed $?
 	exit $EXIT_PR
 fi
 

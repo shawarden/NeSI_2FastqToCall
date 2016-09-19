@@ -19,6 +19,13 @@
 
 # Update history
 
+## 2016-09-19
+
+### Changed
+- Merged initial three steps into 1 to save BLOCKS x CONTIGS job submissions. ~30m Primary Alignment, ~30m SortSAM and 84x <10m Contig split takes <120m. Will padd to 240m as sometimes nodes are bogged.
+- Migrated second phase Merge, MarkDup to CatVariants to main spool script as we don't have to collect contig split dependencies any more.
+
+
 ## 2016-09-08
 
 ### Fixed

@@ -24,10 +24,10 @@ for INPUT in ${FILES}; do
 	if ! inFile; then exit $EXIT_IO; fi
 done
 
-if ! outDirs; then exit $EXIT_IO; fi
+#if ! outDirs; then exit $EXIT_IO; fi
 if ! outFile; then exit $EXIT_IO; fi
 
-CMD="$(which srun) ${SAMTOOLS} cat -h ${BAMHEAD} -o ${JOB_TEMP_DIR}/${OUTPUT} ${FILES}"
+CMD="$(which srun) ${SAMTOOLS} cat -h ${BAMHEAD} -o ${OUTPUT} ${FILES}"
 echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
@@ -36,7 +36,7 @@ if ! ${CMD}; then
 fi
 
 # Move output to final location
-if ! finalOut; then exit $EXIT_MV; fi
+#if ! finalOut; then exit $EXIT_MV; fi
 
 touch ${OUTPUT}.done
 

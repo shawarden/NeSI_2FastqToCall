@@ -85,14 +85,15 @@ export FASTQ_MAXREAD=15000000	# How many reads per block.
 export FASTQ_MAXSCAN=10000		# How many lines to check for best index.
 export FASTQ_MAXDIFF=2			# Maximum index variation before new index is created.
 export FASTQ_MAXJOBS=100		# Maximum number of alignment & sort array elements.
-export FASTQ_MAXJOBZ=99	#$(($FASTQ_MAXJOBS - 1))	# Maximum number of alignment & sort array elements starting from 0.
-export FASTQ_MAXZPAD=4	#${#FASTQ_MAXJOBS}	# Number of characters to pad to blocks.
+export FASTQ_MAXJOBZ=99			#$(($FASTQ_MAXJOBS - 1))	# Maximum number of alignment & sort array elements starting from 0.
+export FASTQ_MAXZPAD=4			#${#FASTQ_MAXJOBS}	# Number of characters to pad to blocks.
 
 # Minimum number of seconds between job submissions
 # 200 submissions/10minutes = 20 submissions/minute = 3 seconds/submission.
 # 600 submissions/60minutes = 10 submissions/minute = 6 seconds/submission.
 # 5000 total jobs (including all array elements.
-export MAX_JOB_RATE=6
+# Set to zero as merged align, sort and split job into one so no submission rate issue.
+export MAX_JOB_RATE=0
 
 
 ############################
@@ -144,20 +145,10 @@ SB[RS,MWT]=210
 SB[RS,MPC]=512
 SB[RS,CPT]=8
 
-# PrimaryAlignment.
-SB[PA,MWT]=90
-SB[PA,MPC]=2048
-SB[PA,CPT]=8
-
-# SortSAM
-SB[SS,MWT]=90
-SB[SS,MPC]=4096
-SB[SS,CPT]=4
-
-# ContigSplit
-SB[CS,MWT]=30
-SB[CS,MPC]=2048
-SB[CS,CPT]=1
+# Block alignment (Merged PA, SS & CS)
+SB[BA,MWT]=180
+SB[BA,MPC]=2048
+SB[BA,CPT]=8
 
 # MergeContigs
 SB[MC,MWT]=120

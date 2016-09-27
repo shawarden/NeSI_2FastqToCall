@@ -20,8 +20,8 @@ OUTPUT=split/contig_split_${BLOCK}
 
 export HEADER="BA"
    
-READ1=blocks/${READGROUP}_R1_${BLOCK}.fastq.gz
-READ2=blocks/${READGROUP}_R2_${BLOCK}.fastq.gz
+READ1=blocks/R1_${BLOCK}.fastq.gz
+READ2=blocks/R2_${BLOCK}.fastq.gz
 
 echo "$HEADER: $READGROUP $BLOCK $READ1 $READ2 -> $OUTPUT"
 jobStats
@@ -53,27 +53,21 @@ RG_SM="SM:$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $1}')"
 
 module load ${MOD_JAVA}
 
-PIC_ARGS="SORT_ORDER=coordinate \
-CREATE_INDEX=true \
-COMPRESSION_LEVEL=9 \
-MAX_RECORDS_IN_RAM=${MAX_RECORDS} \
-TMP_DIR=${JOB_TEMP_DIR}"
-
 # Pipe output from alignment into sortsam
 CMD="${BWA} mem -M -t ${SLURM_JOB_CPUS_PER_NODE} -R @RG'\t'$RG_ID'\t'$RG_PL'\t'$RG_PU'\t'$RG_LB'\t'$RG_SM $REF $READ1 $READ2 | ${SAMTOOLS} view -bh - > ${JOB_TEMP_DIR}/align_${BLOCK}.bam"
 echo "$HEADER: ${CMD}" | tee -a ../commands.txt
 
 if ! eval ${CMD}; then
 	cmdFailed $?
-	exit $EXIT_PR
+	exit 0${EXIT_PR}
 fi
 
-CMD="$(which java) ${JAVA_ARGS} -jar ${PICARD} SortSam ${PIC_ARGS} INPUT=${JOB_TEMP_DIR}/align_${BLOCK}.bam OUTPUT=${JOB_TEMP_DIR}/sort_${BLOCK}.bam"
+CMD="$(which java) ${JAVA_ARGS} -jar ${PICARD} SortSam ${PIC_ARGS} ${SORT_ARGS} INPUT=${JOB_TEMP_DIR}/align_${BLOCK}.bam OUTPUT=${JOB_TEMP_DIR}/sort_${BLOCK}.bam"
 echo "$HEADER: ${CMD}" | tee -a ../commands.txt
 
 if ! ${CMD}; then
 	cmdFailed $?
-	exit $EXIT_PR
+	exit 1${EXIT_PR}
 fi
 
 # Run multiple samview splits at once. capped at cpus assigned. Initially slow but should speed up with time.
@@ -86,7 +80,7 @@ if ! for contig in ${CONTIGARRAY[@]}; do echo $contig; done | (
 	}'
 ); then
 	cmdFailed $?
-	exit $EXIT_PR
+	exit 2${EXIT_PR}
 fi
 
 # Remove input files.

@@ -1,24 +1,24 @@
 #!/bin/bash
-#SBATCH --account		uoo00032
 #SBATCH --job-name		ReadSplit
-#SBATCH --time			0-02:30:00
+#SBATCH --time			359
 #SBATCH --mem-per-cpu	1024
 #SBATCH --cpus-per-task	8
-#SBATCH --constraint	avx
+#SBATCH --constraint	sb
 #SBATCH --array			1,2
 #SBATCH --error			slurm/RS_%A_%a.out
 #SBATCH --output		slurm/RS_%A_%a.out
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
- SAMPLE=${1}
-READNUM=${SLURM_ARRAY_TASK_ID}
-PAIRNUM=$([ $READNUM -eq 1 ] && echo -ne "2" || echo -ne "1")
+   SAMPLE=${1}
+    READ1=${2}
+    READ2=${3}
+ PLATFORM=${4}
+  READNUM=$([ -n $SLURM_ARRAY_TASK_ID ] && echo -ne $SLURM_ARRAY_TASK_ID || echo -ne "1")
+  PAIRNUM=$([ $READNUM -eq 1 ] && echo -ne "2" || echo -ne "1")
+READCOUNT=$((4*$FASTQ_MAXREAD))
 
 [ $READNUM -eq 1 ] && INPUT=${2} || INPUT=${3}
-
-ALIGN_ARRAY=${4}
- SORT_ARRAY=${5} 
 
 # Set entire Alignment Array dependency to this job's success.
 # check_blocks script will release individual array elements, then purge the rest once BLOCK and NEXT match.
@@ -53,7 +53,7 @@ END {
 # If any element of the header exect the index differs, split to new output file.
 # If the index varies by more than FASTQ_MAXDIFF then split to new output file.
 # Output files are appended with the index line data.
-function splitByReadGroupAndCompress {
+function awkByReadsAndGroup {
 	if ! srun ${CAT_CMD} ${INPUT} | awk -F'[@:]' \
 		-v zeroPad="$FASTQ_MAXZPAD" \
 		-v outHeader="$HEADER" \
@@ -64,10 +64,10 @@ function splitByReadGroupAndCompress {
 		-v splitPoint="$FASTQ_MAXREAD" \
 		-v compCmd="$ZIP_CMD" \
 		-v alignArray="$ALIGN_ARRAY" \
-		-v sortArray="$SORT_ARRAY" \
+		-v mergeArray="$MERGE_ARRAY" \
 		-v pBin="$PBIN" \
 		'
-BEGIN{
+BEGIN {
 	curBlock=0
 	blockCount=0
 	padBlock=sprintf("%0"zeroPad"d", curBlock)
@@ -80,14 +80,15 @@ BEGIN{
 		print outHeader": Block "curBlock" does not exist yet. Writing..."
 	}
 }
-NR%4==1{
+
+NR%4==1 {
 	if ( ++readsProcessed%splitPoint == 0 ) {	# Multiple of splitPoint, increment files.
 		blockCount++
 		padBlockCount=sprintf("%0"zeroPad"d", blockCount)
 		# Check if we are writing blocks or if we are not writing blocks then if read is 1, check for an alignment run.
 		if (writeBlock || readNumber=="R1") {
 			# Spawn alignment if the next block in the sequence exists for both reads.
-			if (system(pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "blockCount" "alignArray" "sortArray) != 0) {
+			if (system(pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "blockCount" "alignArray" "mergeArray) != 0) {
 				print outHeader": CheckBlock failure! Aborting."
 				exit 1
 			}
@@ -147,7 +148,7 @@ NR%4==1{
 	if (writeBlock) print | outStream
 }
 
-END{
+END {
 	if (writeBlock) {
 		close (outStream)
 		system("touch "outFile".done")
@@ -156,37 +157,49 @@ END{
 		print outHeader": Block "blockCount" already exists with "readsProcessed" reads."
 	}
 	
-	system(pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "curBlock" "alignArray" "sortArray)
+	system(pBin"/check_blocks.sh "sampleID" "prefix" "readNumber" "curBlock" "curBlock" "alignArray" "mergeArray)
 }
 	'; then
 		exit 1
 	fi
 }
 
-function splitByReads {
-	if ! srun ${CAT_CMD} ${INPUT} | \
-	awk '
-BEGIN {i=1}
-
-NR%'$FASTQ_MAXREAD'==1{
-	if (i>1) {
-		printf "%s " "'$HEADER': Completed block '$READNUM'"i"."
-		close(outStream)
-		if (system("[ -e "pairFile" ]") == 0) {
-			printf "%s " "Next paired file exists. Releasing alignment "i"."
-			system("scontrol update jobid='$ALIGN_ARRAY'_"i" starttime=now dependency=")
-		}
-	}
-	thisFile="R'$READNUM'_"i++".fastq.gz"
-	pairFile="R'$PAIRNUM'_"i".fastq.gz"
-	outStream="~/pigz-2.3.3/pigz -p 8 -c > "thisFile
+function awkByRead {
+	if ! srun ${CAT_CMD} ${INPUT} | awk '
+# Starting conditions.
+BEGIN {
+	i=1
 }
 
+# Every nth line create a new block name.
+NR%'$READCOUNT'==1 {
+	if (i>1) {
+		close(x)
+		print "Block "(i-1)" completed at '$(date +%Y.%m.%d.%H.%M.%S)'!" > "/dev/stderr"
+	}
+	x="'${ZIP_CMD}' -c > blocks/R'$READNUM'_"sprintf("%0"'$FASTQ_MAXZPAD'"d", i++)".fastq.gz"
+}
+
+# Write all lines to currect block.
 {
-	print | outStream
+	print | x
+}
+
+# Finish up.
+END {
+	close(x)
+	print "Block "i" completed at '$(date +%Y.%m.%d.%H.%M.%S)'!" > "/dev/stderr"
 }
 	'; then
-		exit 1
+		exit $EXIT_PR
+	fi
+}
+
+function splitByRead {
+	echo "$HEADER: srun ${CAT_CMD} ${INPUT} | ${SPLIT_CMD} -d -a $FASTQ_MAXZPAD -l $READCOUNT --filter='${ZIP_CMD} > $FILE.fastq.gz' - blocks/R${READNUM}_" | tee -a commands.txt
+	if ! srun ${CAT_CMD} ${INPUT} | ${SPLIT_CMD} -d -a $FASTQ_MAXZPAD -l $READCOUNT --filter='${ZIP_CMD} > $FILE.fastq.gz' - blocks/R${READNUM}_
+	then
+		exit $EXIT_PR
 	fi
 }
 
@@ -199,11 +212,22 @@ echo "$HEADER: Best index is [${bestIndex}]"
 
 mkdir -p blocks
 
-if ! splitByReadGroupAndCompress; then
+if ! awkByRead; then
 	cmdFailed $?
 	exit $EXIT_PR
 fi
 
 #rm ${INPUT} && echo "$HEADER: Purged input file!"
 
+if [ ! -e ${SAMPLE}_R${PAIRNUM}_split.done ]; then
+	echo "Paired read not completed!"
+else
+	echo "Paired read done!"
+	if ! ${PBIN}/spool_merge.sh ${SAMPLE} ${PLATFORM}; then
+		cmdFailed $?
+		exit $EXIT_PR
+	fi
+fi
+
 touch ${SAMPLE}_R${READNUM}_split.done
+

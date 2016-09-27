@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name		CatReads
-#SBATCH --time			0-01:00:00
+#SBATCH --time			60
 #SBATCH --mem-per-cpu	4096
 #SBATCH --cpus-per-task	1
 #SBATCH --constraint	avx

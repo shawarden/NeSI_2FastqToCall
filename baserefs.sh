@@ -43,12 +43,13 @@ export JOB_TEMP_DIR=$([ "${TMPDIR}" != "" ] && echo "${TMPDIR}" || echo "${PROJE
 # Version controlled executables #
 ##################################
 
-export      BWA=${BIN}/bwa-0.7.15/bwa
-export   PICARD=${BIN}/picard-tools-2.5.0/picard.jar
-export SAMTOOLS=${BIN}/samtools-1.3.1/samtools
-export     GATK=${BIN}/GenomeAnalysisTK-nightly-2016-07-22-g8923599/GenomeAnalysisTK.jar
-export  ZIP_CMD=${BIN}/pigz-2.3.3/pigz_sb
-export  CAT_CMD="${ZIP_CMD} -cd"
+export       BWA=${BIN}/bwa-0.7.15/bwa
+export    PICARD=${BIN}/picard-tools-2.5.0/picard.jar
+export  SAMTOOLS=${BIN}/samtools-1.3.1/samtools
+export      GATK=${BIN}/GenomeAnalysisTK-nightly-2016-07-22-g8923599/GenomeAnalysisTK.jar
+export   ZIP_CMD=${BIN}/pigz-2.3.3/pigz_sb
+export   CAT_CMD="${ZIP_CMD} -cd"
+export SPLIT_CMD=${BIN}/coreutils-8.25/src/split
 
 ######################
 # Contig shinanigans #
@@ -57,17 +58,17 @@ export  CAT_CMD="${ZIP_CMD} -cd"
 # Setup basic contig definition.
 export        REFD=${REF}.dict
 export CONTIGARRAY=("" $(cat ${REFD} | awk -F'[[:space:]:]' 'NR!=1{print $3}'))
-export  NUMCONTIGS=$(($(echo ${#CONTIGARRAY[@]}) - 1))
+export  NUMCONTIGS=$((${#CONTIGARRAY[@]} - 1))
 
 # Gender vs autosomal contigs.
 export  SEXCONTIGS="23,24"	# Gender contigs that are special cases.
 export AUTOCONTIGS="1-22"	# Autosomal contigs that determine base coverage for gender calculation.
 
 # Gender contigs have parts that are not created equal.
-export       XPAR1="X:1-2699520"
-export       TRUEX="X:2699521-154931043"
-export       XPAR2="X:154931044-155260560"
-export       TRUEY="Y:2649521-59034050"
+export XPAR1="X:1-2699520"
+export TRUEX="X:2699521-154931043"
+export XPAR2="X:154931044-155260560"
+export TRUEY="Y:2649521-59034050"
 
 
 ####################
@@ -81,7 +82,7 @@ export MOD_JAVA="Java"
 # FastQ Split Data management #
 ###############################
 
-export FASTQ_MAXREAD=15000000	# How many reads per block.
+export FASTQ_MAXREAD=10000000	# How many reads per block.
 export FASTQ_MAXSCAN=10000		# How many lines to check for best index.
 export FASTQ_MAXDIFF=2			# Maximum index variation before new index is created.
 export FASTQ_MAXJOBS=100		# Maximum number of alignment & sort array elements.
@@ -93,7 +94,7 @@ export FASTQ_MAXZPAD=4			#${#FASTQ_MAXJOBS}	# Number of characters to pad to blo
 # 600 submissions/60minutes = 10 submissions/minute = 6 seconds/submission.
 # 5000 total jobs (including all array elements.
 # Set to zero as merged align, sort and split job into one so no submission rate issue.
-export MAX_JOB_RATE=0
+export MAX_JOB_RATE=6
 
 
 ############################
@@ -139,74 +140,65 @@ SB[MAILTYPE]=FAIL
 #
 
 SB[BWTM]=1.25	# Base wall-time multiplier.
+SB[MWT]=359		# Maximum wall-time to be in High partition.
 
 # ReadSplit.
-SB[RS,MWT]=210
+SB[RS,MWT]=${SB[MWT]}
 SB[RS,MPC]=512
 SB[RS,CPT]=8
 
 # Block alignment (Merged PA, SS & CS)
-SB[BA,MWT]=180
+SB[BA,MWT]=${SB[MWT]}
 SB[BA,MPC]=2048
 SB[BA,CPT]=8
 
-# MergeContigs
-SB[MC,MWT]=120
-SB[MC,MPC]=4096
-SB[MC,CPT]=4
+# Merge & Mark
+SB[MM,MWT]=${SB[MWT]}
+SB[MM,MPC]=4096
+SB[MM,CPT]=4
 
-# MarkDuplicates
-SB[MD,MWT]=180
-SB[MD,MPC]=8192
-SB[MD,CPT]=2
-
-# BaseRecalibration
-SB[BR,MWT]=60
-SB[BR,MPC]=4096
-SB[BR,CPT]=4
-
-# PrintReads
-SB[PR,MWT]=120
-SB[PR,MPC]=4092
-SB[PR,CPT]=8
+# Recal & Print
+SB[RC,MWT]=${SB[MWT]}
+SB[RC,MPC]=4092
+SB[RC,CPT]=8
 
 # DepthofCoverage
-SB[DC,MWT]=60
+SB[DC,MWT]=${SB[MWT]}
 SB[DC,MPC]=2048
 SB[DC,CPT]=8
 
 # GenderDetermination
-SB[GD,MWT]=10
+SB[GD,MWT]=${SB[MWT]}
 SB[GD,MPC]=512
 SB[GD,CPT]=1
 
 # HaplotypeCaller
-SB[HC,MWT]=90
+SB[HC,MWT]=${SB[MWT]}
 SB[HC,MPC]=4096
 SB[HC,CPT]=8
 
 # CatReads
-SB[CR,MWT]=60
+SB[CR,MWT]=${SB[MWT]}
 SB[CR,MPC]=4096
 SB[CR,CPT]=1
 
 # ReadIndex
-SB[RI,MWT]=93
+SB[RI,MWT]=${SB[MWT]}
 SB[RI,MPC]=4096
 SB[RI,CPT]=1
 
 # CatVariants
-SB[CV,MWT]=120
+SB[CV,MWT]=${SB[MWT]}
 SB[CV,MPC]=16384
 SB[CV,CPT]=1
 
 # FingerPrint
-SB[FP,MWT]=360
+SB[FP,MWT]=${SB[MWT]}
 SB[FP,MPC]=4096
 SB[FP,CPT]=8
 
 # SelectVariants
-SB[SV,MWT]=360
+SB[SV,MWT]=${SB[MWT]}
 SB[SV,MPC]=4096
 SB[SV,CPT]=8
 
@@ -214,92 +206,6 @@ SB[SV,CPT]=8
 SB[TF,MWT]=20
 SB[TF,MPC]=512
 SB[TF,CPT]=1
-
-#Wall time multipliers to dynamically decrease array element walltime.
-SB[WTM,1]=1.0
-SB[WTM,2]=${SB[WTM,1]}
-SB[WTM,3]=1.0
-SB[WTM,4]=1.0
-SB[WTM,5]=1.0
-SB[WTM,6]=1.0
-SB[WTM,7]=1.0
-SB[WTM,8]=1.0
-SB[WTM,9]=1.0
-SB[WTM,10]=1.0
-SB[WTM,11]=1.0
-SB[WTM,12]=1.0
-SB[WTM,13]=1.0
-SB[WTM,14]=1.0
-SB[WTM,15]=1.0
-SB[WTM,16]=1.0
-SB[WTM,17]=1.0
-SB[WTM,18]=1.0
-SB[WTM,19]=1.0
-SB[WTM,20]=1.0
-SB[WTM,21]=1.0
-SB[WTM,22]=1.0
-SB[WTM,23]=1.0
-SB[WTM,24]=1.0
-SB[WTM,25]=1.0
-SB[WTM,26]=${SB[WTM,26]}
-SB[WTM,27]=${SB[WTM,26]}
-SB[WTM,28]=${SB[WTM,26]}
-SB[WTM,29]=${SB[WTM,26]}
-SB[WTM,30]=${SB[WTM,26]}
-SB[WTM,31]=${SB[WTM,26]}
-SB[WTM,32]=${SB[WTM,26]}
-SB[WTM,33]=${SB[WTM,26]}
-SB[WTM,34]=${SB[WTM,26]}
-SB[WTM,35]=${SB[WTM,26]}
-SB[WTM,36]=${SB[WTM,26]}
-SB[WTM,37]=${SB[WTM,26]}
-SB[WTM,38]=${SB[WTM,26]}
-SB[WTM,39]=${SB[WTM,26]}
-SB[WTM,40]=${SB[WTM,26]}
-SB[WTM,41]=${SB[WTM,26]}
-SB[WTM,42]=${SB[WTM,26]}
-SB[WTM,43]=${SB[WTM,26]}
-SB[WTM,44]=${SB[WTM,26]}
-SB[WTM,45]=${SB[WTM,26]}
-SB[WTM,46]=${SB[WTM,26]}
-SB[WTM,47]=${SB[WTM,26]}
-SB[WTM,48]=${SB[WTM,26]}
-SB[WTM,49]=${SB[WTM,26]}
-SB[WTM,50]=${SB[WTM,26]}
-SB[WTM,51]=${SB[WTM,26]}
-SB[WTM,52]=${SB[WTM,26]}
-SB[WTM,53]=${SB[WTM,26]}
-SB[WTM,54]=${SB[WTM,26]}
-SB[WTM,55]=${SB[WTM,26]}
-SB[WTM,56]=${SB[WTM,26]}
-SB[WTM,57]=${SB[WTM,26]}
-SB[WTM,58]=${SB[WTM,26]}
-SB[WTM,59]=${SB[WTM,26]}
-SB[WTM,60]=${SB[WTM,26]}
-SB[WTM,61]=${SB[WTM,26]}
-SB[WTM,62]=${SB[WTM,26]}
-SB[WTM,63]=${SB[WTM,26]}
-SB[WTM,64]=${SB[WTM,26]}
-SB[WTM,65]=${SB[WTM,26]}
-SB[WTM,66]=${SB[WTM,26]}
-SB[WTM,67]=${SB[WTM,26]}
-SB[WTM,68]=${SB[WTM,26]}
-SB[WTM,69]=${SB[WTM,26]}
-SB[WTM,70]=${SB[WTM,26]}
-SB[WTM,71]=${SB[WTM,26]}
-SB[WTM,72]=${SB[WTM,26]}
-SB[WTM,73]=${SB[WTM,26]}
-SB[WTM,74]=${SB[WTM,26]}
-SB[WTM,75]=${SB[WTM,26]}
-SB[WTM,76]=${SB[WTM,26]}
-SB[WTM,77]=${SB[WTM,26]}
-SB[WTM,78]=${SB[WTM,26]}
-SB[WTM,79]=${SB[WTM,26]}
-SB[WTM,80]=${SB[WTM,26]}
-SB[WTM,81]=${SB[WTM,26]}
-SB[WTM,82]=${SB[WTM,26]}
-SB[WTM,83]=${SB[WTM,26]}
-SB[WTM,84]=${SB[WTM,26]}
 
 export SB
 
@@ -316,6 +222,40 @@ export   JAVA_ARGS="-Xmx${JAVA_MEM_GB}g -Djava.io.tmpdir=${JOB_TEMP_DIR}"
 export MAX_RECORDS=$((${JAVA_MEM_GB} * 200000)) #~100bp picard records in memory.
 
 export OPENBLAS_MAIN_FREE=1
+
+####################
+# Picard Arguments #
+####################
+
+# Shared Picard arguments.
+PIC_ARGS="COMPRESSION_LEVEL=9 \
+MAX_RECORDS_IN_RAM=${MAX_RECORDS} \
+TMP_DIR=${JOB_TEMP_DIR}"
+
+# Sort specific arguments
+SORT_ARGS="CREATE_INDEX=true \
+SORT_ORDER=coordinate"
+
+# Merge specific arguments
+MERGE_ARGS="USE_THREADING=true"
+
+# MarkDuplicate specific arguments.
+MARK_ARGS="CREATE_INDEX=true \
+METRICS_FILE=metrics.txt"
+
+##################
+# GATK arguments #
+##################
+
+GATK_ARGS="-R ${REFA} \
+-nct ${SLURM_JOB_CPUS_PER_NODE}"
+
+GATK_BSQR="-T BaseRecalibrator \
+-knownSites ${DBSNP} \
+-knownSites ${MILLS}"
+
+GATK_READ="-T PrintReads \
+--bam_compression 9"
 
 ####################
 # Helper functions #
@@ -418,7 +358,7 @@ trap "failMetrics" SIGTERM
 function storeMetrics {
 	if [ "$SLURM_JOB_NAME" != "" ] && [ "$HEADER" != "" ] ; then
 		case $HEADER in
-			RS|PA|SS|CS)
+			RS|PA|SS|CS|BA)
 				BACKDIR="../"
 				;;
 			*)
@@ -653,6 +593,7 @@ function jobWait {
 	fi
 	echo $timeNow > ${PROJECT}/submitted.log
 }
+export -f jobWait
 
 ###################
 # Visual ticker
@@ -700,6 +641,7 @@ function condenseList {
 		fi
 	done | paste -sd ","
 }
+export -f condenseList
 
 #####################
 # Expand comma separated list of ranges to individual elements
@@ -720,3 +662,4 @@ function expandList {
 	
 	echo $a
 }
+export -f expandList

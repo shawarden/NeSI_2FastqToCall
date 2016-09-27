@@ -8,6 +8,7 @@ READGROUP=${2}
     BLOCK=${4}
      NEXT=${5}
  ALIGNARR=${6}
+ MERGEARR=${7}
   
 ZPADBLOCK=$(printf "%0${FASTQ_MAXZPAD}d" $BLOCK)
 #ZPADNEXT=$(printf "%0${FASTQ_MAXZPAD}d" $NEXT)
@@ -22,15 +23,13 @@ RUN=$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $4}')
 PLATFORM=Genomic
 
 function spoolAlign {
-	alignOutput=aligned/${ZPADBLOCK}.bam
-	sortOutput=sorted/${ZPADBLOCK}.bam
+	alignBlockOutput=split/contig_split_${ZPADBLOCK}.done
 	
-	mkdir -p $(dirname ${alignOutput})
-	mkdir -p $(dirname ${sortOutput})
+	mkdir -p $(dirname ${alignBlockOutput})
 	
-	printf "SA: Alignment   "
+	printf "%-16s" "Alignment"
 	
-	if [ ! -e ${alignOutput}.done ]; then
+	if [ ! -e ${alignBlockOutput} ]; then
 		scontrol update JobId=${ALIGNARR}_${BLOCK} StartTime=now Dependency=
 		if [ $? -ne 0 ]; then
 			printf "FAILED!\n"

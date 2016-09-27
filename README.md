@@ -19,6 +19,16 @@
 
 # Update history
 
+## 2016-09-27
+
+### Fixed
+- Cancelling extra alignment blocks causes merge step to be cancelled.
+- Removed piped output from ContigMerge to MarkDuplicates as this isn't handled well.
+
+### Changed
+- Merged ContigMerge and MarkDuplicate functions to cut task count in half: 1x84 vs 2x84
+- Merged BQSR and PrintRead functions to cut task count in half: 1x84 vs 2x84
+
 ## 2016-09-19
 
 ### Changed

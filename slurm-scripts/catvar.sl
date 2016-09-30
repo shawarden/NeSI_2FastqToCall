@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name		CatVariants
-#SBATCH --time			0-03:00:00
+#SBATCH --time			359
 #SBATCH --mem-per-cpu	16384
 #SBATCH --cpus-per-task	1
 #SBATCH --constraint	avx

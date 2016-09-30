@@ -203,9 +203,9 @@ SB[SV,MPC]=4096
 SB[SV,CPT]=8
 
 # TransferFile
-SB[TF,MWT]=20
-SB[TF,MPC]=512
-SB[TF,CPT]=1
+SB[TF,MWT]=${SB[MWT]}
+SB[TF,MPC]=1024
+SB[TF,CPT]=6
 
 export SB
 
@@ -228,20 +228,19 @@ export OPENBLAS_MAIN_FREE=1
 ####################
 
 # Shared Picard arguments.
-PIC_ARGS="COMPRESSION_LEVEL=9 \
+PIC_ARGS="CREATE_INDEX=true \
+COMPRESSION_LEVEL=9 \
 MAX_RECORDS_IN_RAM=${MAX_RECORDS} \
 TMP_DIR=${JOB_TEMP_DIR}"
 
 # Sort specific arguments
-SORT_ARGS="CREATE_INDEX=true \
-SORT_ORDER=coordinate"
+SORT_ARGS="SORT_ORDER=coordinate"
 
 # Merge specific arguments
 MERGE_ARGS="USE_THREADING=true"
 
 # MarkDuplicate specific arguments.
-MARK_ARGS="CREATE_INDEX=true \
-METRICS_FILE=metrics.txt"
+MARK_ARGS="METRICS_FILE=metrics.txt"
 
 ##################
 # GATK arguments #
@@ -256,6 +255,10 @@ GATK_BSQR="-T BaseRecalibrator \
 
 GATK_READ="-T PrintReads \
 --bam_compression 9"
+
+GATK_HTC="-T HaplotypeCaller \
+--emitRefConfidence GVCF \
+--dbsnp ${DBSNP}"
 
 ####################
 # Helper functions #
@@ -663,3 +666,11 @@ function expandList {
 	echo $a
 }
 export -f expandList
+
+###################
+# Returns full path to specified file.
+###################
+function realpath {
+	echo $(cd $(dirname $1); pwd)/$(basename $1);
+}
+export -f realpath

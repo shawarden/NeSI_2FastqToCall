@@ -168,14 +168,17 @@ function awkByRead {
 	if ! srun ${CAT_CMD} ${INPUT} | awk '
 # Starting conditions.
 BEGIN {
+	start=systime()
 	i=1
 }
 
 # Every nth line create a new block name.
 NR%'$READCOUNT'==1 {
 	if (i>1) {
+		end=systime()
 		close(x)
-		print "Block "(i-1)" completed at '$(date +%Y.%m.%d.%H.%M.%S)'!" > "/dev/stderr"
+		print "Block '$READNUM'x"(i-1)" completed in "(end-start)" seconds!" > "/dev/stderr"
+		start=systime()
 	}
 	x="'${ZIP_CMD}' -c > blocks/R'$READNUM'_"sprintf("%0"'$FASTQ_MAXZPAD'"d", i++)".fastq.gz"
 }
@@ -187,8 +190,9 @@ NR%'$READCOUNT'==1 {
 
 # Finish up.
 END {
+	end=systime()
 	close(x)
-	print "Block "i" completed at '$(date +%Y.%m.%d.%H.%M.%S)'!" > "/dev/stderr"
+	print "Block '$READNUM'x"(i)" completed in "(end-start)" seconds!" > "/dev/stderr"
 }
 	'; then
 		exit $EXIT_PR

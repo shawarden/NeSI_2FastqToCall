@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --account		uoo00032
 #SBATCH --job-name		TransferFile
-#SBATCH --time			0-00:20:00
+#SBATCH --time			359
 #SBATCH --mem-per-cpu	512
 #SBATCH --cpus-per-task	1
 #SBATCH --error			slurm/TF_%j.out
@@ -29,7 +29,7 @@ LABEL=$(echo $(basename ${OUTPUT}) | tr '.' '_')
 
 if [ -e ${LABEL}.transfer.done ]
 then
-	echo "$HEADER: $LABEL already started!"
+	echo "$HEADER: $LABEL already done!"
 	exit 0
 fi
 
@@ -42,7 +42,7 @@ date
 CMD="ssh globus transfer --encrypt --perf-cc 4 --perf-p 8 --label \"${LABEL}\" -- nz#uoa/$(pwd)/${INPUT} nesi#otago-dtn01/${OUTPUT}"
 echo "$HEADER: ${CMD}" | tee -a commands.txt
 
-if ! ${CMD}; then
+if ! ssh globus wait $(${CMD} | awk '{print $3}'); then
 	cmdFailed $?
 	exit $EXIT_PR
 fi

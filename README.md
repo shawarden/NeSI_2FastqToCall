@@ -19,6 +19,16 @@
 
 # Update history
 
+
+## 2016-09-30
+
+### Added
+- Job cleanup step to roll up output and remove left-overs.
+
+### Changed
+- Transfer jobs will wait until transfer is complete before exiting.
+
+
 ## 2016-09-27
 
 ### Fixed

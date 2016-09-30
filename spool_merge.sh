@@ -37,7 +37,7 @@ if [ "$alignArray" != "" ]; then
 		printf "FAILED!\n"
 		exit 1
 	else
-		printf "%sx%-4d [%s]\n" "${DEP_BA}" $(splitByChar "$alignArray" "," | wc -w) $(condenseList "$alignArray")
+		printf "%sx%-2d [%s]\n" "${DEP_BA}" $(splitByChar "$alignArray" "," | wc -w) $(condenseList "$alignArray")
 	fi
 else
 	printf "done\n"
@@ -155,7 +155,7 @@ fi
 printf "%-22s" "HaplotypeCaller"
 
 if [ "$haploArray" != "" ]; then
-	DEP_HC=$(sbatch $(dispatch "HC") -J HC_${IDN} --array $haploArray $(depCheck ${DEP_PR}) ${SLSBIN}/haplotypecaller.sl | awk '{print $4}')
+	DEP_HC=$(sbatch $(dispatch "HC") -J HC_${IDN} --array $haploArray $(depCheck ${DEP_RC}) ${SLSBIN}/haplotypecaller.sl | awk '{print $4}')
 	if [ $? -ne 0 ] || [ "$DEP_HC" == "" ]; then
 		printf "FAILED!\n"
 		exit 1
@@ -304,6 +304,9 @@ else
 	fi
 fi
 
+# Add cleanup dependency.
+saveDeps=$(appendList "${saveDeps}" "${DEP_CR}")
+
 printf "%-22s" "CatVariants"
 
 if [ ! -e ${catVarOutput}.done ]; then
@@ -318,17 +321,13 @@ else
 	printf "done\n" 
 fi
 
-if [ "$DEP_CV" != "" ] && [ "$DEP_CR" != "" ]; then
-	saveDeps="${DEP_CV}:${DEP_CR}"
-elif [ "$DEP_CR" != "" ]; then
-	saveDeps="${DEP_CR}"
-elif [ "$DEP_CV" != "" ]; then
-	saveDeps="${DEP_CV}"
-fi
+# Add cleanup dependency.
+saveDeps=$(appendList "${saveDeps}" "${DEP_CV}")
 
-printf "%-22s" "Save metrics"
 
-if [ ! -e cleanup.done ]; then
+printf "%-22s" "Save workflow"
+
+if [ "$saveDeps" != "" ]; then
 	DEP_CU=$(sbatch $(dispatch "TF") -J CU_${IDN} $(depCheck ${saveDeps}) ${SLSBIN}/clearup.sl ${IDN} | awk '{print $4}')
 	if [ $? -ne 0 ] || [ "$DEP_CU" == "" ]; then
 		printf "FAILED!\n"

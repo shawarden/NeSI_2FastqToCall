@@ -54,12 +54,12 @@ if ! finalOut; then exit $EXIT_MV; fi
 touch ${OUTPUT}.done
 
 # Start transfers for variants file and index.
-if ! ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}; then
+if ! . ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}; then
 	echo "$HEADER: Transfer failed!"
 	exit $EXIT_TF
 fi
 
-if ! ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}.tbi; then
+if ! . ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}.tbi; then
 	echo "$HEADER: Transfer index failed!"
 	exit $EXIT_TF
 fi

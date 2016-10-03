@@ -168,7 +168,7 @@ echo "Y_CHROMOSOMES=$yChromes" | tee -a ${OUTPUT}
 
 touch ${OUTPUT}.done
 
-if ! ${SLSBIN}/transfer.sl ${IDN} coverage.sh ${IDN}.coverage.sh; then
+if ! . ${SLSBIN}/transfer.sl ${IDN} coverage.sh ${IDN}.coverage.sh; then
 	echo "$HEADER: Transfer failed!"
 	exit $EXIT_TF
 fi

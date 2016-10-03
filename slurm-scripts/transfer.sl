@@ -13,8 +13,6 @@ source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
  INPUT=${2}
 OUTPUT=${3}
 
-HEADER="TF"
-
 echo "$HEADER: IDN:${IDN} + INPUT:${INPUT} -> OUTPUT:${OUTPUT}"
 
 if ! inFile; then exit $EXIT_IO; fi

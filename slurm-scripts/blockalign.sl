@@ -11,8 +11,6 @@
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
    SAMPLE=${1}
-READGROUP=$(cat blocks/R1_ReadGroup.txt)
-
 # Block depends on input or array id.
 export BLOCK=$([ "$3" != "" ] && printf "%0${FASTQ_MAXZPAD}d" $3 || printf "%0${FASTQ_MAXZPAD}d" $SLURM_ARRAY_TASK_ID)
    
@@ -22,6 +20,8 @@ export HEADER="BA"
    
 READ1=blocks/R1_${BLOCK}.fastq.gz
 READ2=blocks/R2_${BLOCK}.fastq.gz
+
+READGROUP=$(${CAT_CMD} ${READ1} | head -1 | awk awk -F'[@:]' '{print $2"_"$3"_"$4"_"$5"_"$10}' )
 
 echo "$HEADER: $READGROUP $BLOCK $READ1 $READ2 -> $OUTPUT"
 jobStats

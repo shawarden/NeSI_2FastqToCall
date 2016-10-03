@@ -25,17 +25,16 @@ find . -type f -regex '.*\(bam\|bai\|vcf\|vcf.gz\|tbi\)$' -exec sh -c 'echo "$HE
 # Get data-less store size.
 du -sh
 
-cd ..
-
 # Roll up entire directory structure and .done files.
-${ZIP_CMD} ${IDN}
+tar cf - ${PWD} | ${ZIP_CMD} -9 > ../${IDN}.tar.gz
 
 # Upload workflow structure.
-if ! ${SLSBIN}/transfer.sl ${IDN} ${IDN}.gz; then
+if ! . ${SLSBIN}/transfer.sl ${IDN} ../${IDN}.tar.gz; then
 	echo "$HEADER: Transfer process failed!"
 	exit $EXIT_TF
 fi
 
 # Purge run.
 # This really should fail as the --error and --output files are in this folder.
-rm --interactive=never -fr ${IDN}
+rm --interactive=never -fr *
+rm ../${IDN}.tar.gz;

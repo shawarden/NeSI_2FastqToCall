@@ -42,7 +42,7 @@ touch ${OUTPUT}.done
 
 sbatch $(dispatch "RI") -J RI_${IDN} ${SLSBIN}/catreadsindex.sl ${OUTPUT} ${OUTPUT%.bam}.bai
 
-if ! ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}; then
+if ! . ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}; then
 	echo "$HEADER: Transfer failed!"
 	exit $EXIT_TF
 fi

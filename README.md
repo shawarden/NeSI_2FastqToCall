@@ -20,6 +20,13 @@
 # Update history
 
 
+## 2016-10-03
+
+### Fixed
+- Cleanup gzip command on folder structure.
+- Extracted read-group from read files for alignment since readsplit doens't generate them any more.
+
+
 ## 2016-09-30
 
 ### Added

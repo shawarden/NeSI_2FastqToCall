@@ -359,7 +359,7 @@ trap "failMetrics" SIGTERM
 # Output runtime metrics to a log file.
 #######################
 function storeMetrics {
-	if [ "$SLURM_JOB_NAME" != "" ] && [ "$HEADER" != "" ] ; then
+	if [ "$SLURM_JOB_NAME" != "" ] && [ "$HEADER" != "" ] && [ "$HEADER" != "CU" ]; then
 		case $HEADER in
 			RS|PA|SS|CS|BA)
 				BACKDIR="../"
@@ -369,11 +369,10 @@ function storeMetrics {
 		esac
 		
 		printf \
-			"%s\t%s\t%dc\t%1.1fGHz\t%dGB\t%s\t%s\n" \
-			"$(date '+%Y-%m-%d %H:%M:%S')" \
+			"%s %s %dc %dGB %s %s\n" \
+			"$(date '+%Y%m%d-%H%M%S')" \
 			"${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne ":$SLURM_ARRAY_TASK_ID")" \
 			${SLURM_JOB_CPUS_PER_NODE} \
-			$(echo "$(lscpu | grep "CPU MHz" | awk '{print $3}') / 1000" | bc -l) \
 			$(((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU}) / 1024)) \
 			$(printHMS $SECONDS) \
 			$([ "$SIGTERM" != "" ] && echo -ne "$SIGTERM" || echo -ne "") | \

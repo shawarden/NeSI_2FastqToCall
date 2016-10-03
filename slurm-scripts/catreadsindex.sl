@@ -13,7 +13,7 @@ INPUT=${1}
 OUTPUT=$([ "${2}" == "" ] && echo -ne "${INPUT%.bam}.bai" || echo -ne "${2}")
 IDN=$(echo $SLURM_JOB_NAME | cut -d'_' -f2)
 
-HEADER=RI
+HEADER="RI"
 
 echo "$HEADER: ${INPUT} -> ${OUTPUT}"
 date
@@ -36,7 +36,7 @@ if ! finalOut; then exit $EXIT_MV; fi
 
 touch ${OUTPUT}.done
 
-if ! ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}; then
+if ! . ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}; then
 	echo "$HEADER: Transfer index failed!"
 	exit $EXIT_TF
 fi

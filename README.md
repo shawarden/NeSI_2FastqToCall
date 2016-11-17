@@ -19,6 +19,23 @@
 
 # Update history
 
+## 2016-11-18
+
+### Removed
+- Contig block merge as Picard MarkDuplicates takes multiple inputs and outputs correctly sorted BAM with no significant penalty.
+- Removed array depedency correspondence from depCheck function as this doesn't work for cases of partial completion in array chains.
+
+### Changed
+- Begun migration to HG38 with Alt-Aware alignment.
+- Switched alignment phase to use RAM disk instead of temp storage to minimize network traffic while not risking running out of node temp space.
+- Java memory allocation due to ram-disk usage requirements.
+- storeMetrics function to try and output job statistics (cpu,mem,etc usage) Not much luck here as sstat seem kinda broken and sacct is slow to update.
+- Minor code cleanup.
+
+### Added
+- Job position tracking.
+- Initial Job auto-restart mechanism.
+
 
 ## 2016-10-03
 

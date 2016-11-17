@@ -12,6 +12,7 @@ source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
      READ2=${FASTQS}/${3}
  PLATFORM=${4}
  LOCATION=${5}
+ 
 if [ "$LOCATION" == "scratch" ]; then
 	WORK_PATH="/scratch/jobs/$USER"
 else
@@ -42,6 +43,10 @@ if ! mkdir -p ${INDIVIDUAL_PATH}/slurm; then
 	exit 1
 fi
 
+printf "%-22s" "Command"
+echo $0 ${@} | tee ${INDIVIDUAL_PATH}/jobReSubmit.sh
+chmod +x ${INDIVIDUAL_PATH}/jobReSubmit.sh
+
 date '+%Y%m%d_%H%M%S' >> ${WORK_PATH}/${IDN}/starttime.txt
 
 cd ${SAMPLE_PATH}
@@ -68,7 +73,7 @@ done
 
 sizeString=" kMGTEPYZ"
 sizeBlock=0
-readSize=$(($(ls -la ${READ1} | awk '{print $5}') + $(ls -la ${READ2} | awk '{print $5}')))
+readSize=$(($(ls -la $READ1 | awk '{print $5}') + $(ls -la $READ2 | awk '{print $5}')))
 while [ $(echo "$readSize / 1024 > 0" | bc) -eq 1 ]; do
 	#printf "%-12s %.0f%s\n" "Read size" $readSize $(echo ${sizeString:${sizeBlock}:1}Bytes | sed -e 's/ //g')
 	readSize=$(echo "$readSize / 1024" | bc -l)
@@ -83,12 +88,13 @@ readSize=$(echo $(printf "%.0f" $readSize)${sizeString:${sizeBlock}:1}B | sed -e
 
 if [ "$splitReadArray" != "" ]; then
 	# Split array contains data so run the missing split function.
-	DEP_SR=$(sbatch $(dispatch "RS") -J RS_${SAMPLE}_${readSize} -a $splitReadArray ${SLSBIN}/readsplit.sl ${SAMPLE} ${READ1} ${READ2} ${PLATFORM} | awk '{print $4}')
-	if [ $? -ne 0 ] || [ "$DEP_SR" == "" ]; then
+	DEP_RS=$(sbatch $(dispatch "RS") -J RS_${SAMPLE}_${readSize} -a $splitReadArray $SLSBIN/readsplit.sl $SAMPLE $READ1 $READ2 $PLATFORM | awk '{print $4}')
+	if [ $? -ne 0 ] || [ "$DEP_RS" == "" ]; then
 		printf "FAILED!\n"
 		exit 1
 	else
-		printf "%sx%-1d [%s]\n" "${DEP_SR}" $(splitByChar "$splitReadArray" "," | wc -w) "$splitReadArray"
+		printf "%sx%-1d [%s]\n" "${DEP_RS}" $(splitByChar "$splitReadArray" "," | wc -w) "$splitReadArray"
+		echo $DEP_RS > ../lastJob.txt
 	fi
 else
 	printf "done\n"

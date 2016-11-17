@@ -51,22 +51,21 @@ if ! outFile; then exit $EXIT_IO; fi
 
 module load ${MOD_JAVA}
 
-CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} MergeSamFiles ${PIC_ARGS} ${MERGE_ARGS} ${mergeList} OUTPUT=${MERGED}"
+#CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} MergeSamFiles ${PIC_ARGS} ${MERGE_ARGS} ${mergeList} OUTPUT=${MERGED}"
+#echo "$HEADER: ${CMD}" | tee -a commands.txt
+
+#if ! ${CMD}; then
+#	cmdFailed $?
+#	exit ${EXIT_PR}
+#fi
+
+CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} MarkDuplicates ${PIC_ARGS} ${MARK_ARGS} ${mergeList} OUTPUT=${OUTPUT}" #INPUT=${MERGED} 
 echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 if ! ${CMD}; then
 	cmdFailed $?
-	exit 1${EXIT_PR}
+	exit ${EXIT_PR}
 fi
-
-CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} MarkDuplicates ${PIC_ARGS} ${MARK_ARGS} INPUT=${MERGED} OUTPUT=${OUTPUT}"
-echo "$HEADER: ${CMD}" | tee -a commands.txt
-
-if ! ${CMD}; then
-	cmdFailed $?
-	exit 1${EXIT_PR}
-fi
-
 
 rm ${contigMerBlocks} && echo "$HEADER: Purging $numcontigMerBlocks contig merge blocks!"
 

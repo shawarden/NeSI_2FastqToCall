@@ -13,7 +13,7 @@ set -o pipefail
 # Exit codes #
 ##############
 
-export EXIT_IO=10
+export EXIT_IO=12
 export EXIT_PR=15
 export EXIT_MV=20
 export EXIT_TF=21
@@ -21,6 +21,8 @@ export EXIT_TF=21
 ######################
 # General References #
 ######################
+
+export SLURM_VERSION=$(scontrol -V | awk '{print $2}')
 
 export      PROJECT=/projects/uoo00032
 export    RESOURCES=${PROJECT}/Resources
@@ -30,12 +32,21 @@ export         PBIN=${BIN}/NeSI_2FastqToCall
 export       SLSBIN=${PBIN}/slurm-scripts
 export DESCRIPTIONS=${RESOURCES}/FastQdescriptions.txt
 export       FASTQS=${PROJECT}/fastqfiles
-export       BUNDLE=${RESOURCES}/broad_bundle_b37_v2.5
-export        DBSNP=${BUNDLE}/dbsnp_141.GRCh37.vcf
-export        MILLS=${BUNDLE}/Mills_and_1000G_gold_standard.indels.b37.vcf
-export       INDELS=${BUNDLE}/1000G_phase1.indels.b37.vcf
+
+#export       COMMON=${RESOURCES}/Hapmap3_3commonvariants.vcf
+#export       BUNDLE=${RESOURCES}/broad_bundle_b37_v2.5
+#export        DBSNP=${BUNDLE}/dbsnp_141.GRCh37.vcf
+#export        MILLS=${BUNDLE}/Mills_and_1000G_gold_standard.indels.b37.vcf
+#export       INDELS=${BUNDLE}/1000G_phase1.indels.b37.vcf
+#export          REF=${BUNDLE}/human_g1k_v37
+
 export       COMMON=${RESOURCES}/Hapmap3_3commonvariants.vcf
-export          REF=${BUNDLE}/human_g1k_v37
+export       BUNDLE=${RESOURCES}/v0
+export        DBSNP=${BUNDLE}/Homo_sapiens_assembly38.dbsnp138.vcf
+export        MILLS=${BUNDLE}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
+export       INDELS=${BUNDLE}/1000G_phase1.snps.high_confidence.hg38.vcf.gz
+export          REF=${BUNDLE}/Homo_sapiens_assembly38
+
 export         REFA=${REF}.fasta
 export JOB_TEMP_DIR=$([ "${TMPDIR}" != "" ] && echo "${TMPDIR}" || echo "${PROJECT}/.tmp")
 
@@ -56,20 +67,58 @@ export SPLIT_CMD=${BIN}/coreutils-8.25/src/split
 ######################
 
 # Setup basic contig definition.
-export        REFD=${REF}.dict
-export CONTIGARRAY=("" $(cat ${REFD} | awk -F'[[:space:]:]' 'NR!=1{print $3}'))
-export  NUMCONTIGS=$((${#CONTIGARRAY[@]} - 1))
+export                REFD=${REF}.dict
 
-# Gender vs autosomal contigs.
-export  SEXCONTIGS="23,24"	# Gender contigs that are special cases.
-export AUTOCONTIGS="1-22"	# Autosomal contigs that determine base coverage for gender calculation.
+if [ ! -e $REFD ]; then 
+	echo "Unable to locate reference dictionary"
+	exit 1
+fi
+
+# List of contigs in specified reference sequence.
+# GRCh37 has 84
+# HG38 has 3367
+export         CONTIGARRAY=("" $(cat $REFD | awk 'NR!=1{print $2}' | sed -e 's/SN://g'))
+
+# List of contigs in specified reference sequence, excluding those marked as decoy, non-human sequences.
+# GRCh37 has 84
+# HG38 has 982 (2384 decoys removed)
+export CONTIGARRAY_NODECOY=("" $(cat $REFD | grep -v "decoy" | awk 'NR!=1{print $2}' | sed -e 's/SN://g'))
+
+# List of primary contigs to wrap all alternate and positionless contigs within a chromosome.
+# In HG38 chr1 will be combination of chr1, chr1_KI270706v1_random, chr1_KI270762v1_alt, etc...
+# In HG38 HLA will contain all HLA contigs.
+# In HG38 EBV will contain all Epstein-Barr Virus contigs
+# GRCh37 has 84
+# HG38 has 28
+export        CONTIGBLOCKS=("" $(for i in $(seq 0 $((${#CONTIGARRAY[@]}-1))); do echo "${CONTIGARRAY[$i]}"; done | awk -F'[-_ ]' '
+{
+	words[$1]++
+}
+END{
+	for (w in words) {
+		printf "%s\n", w
+	}
+}
+	' | sort -V -f
+))
+
+export          NUMCONTIGS=$((${#CONTIGARRAY[@]} - 1))
+export  NUMCONTIGS_NODECOY=$((${#CONTIGARRAY_NODECOY[@]} - 1))
+export    NUMCONTIG_BLOCKS=$((${#CONTIGBLOCKS[@]} - 1))
 
 # Gender contigs have parts that are not created equal.
-export XPAR1="X:1-2699520"
-export TRUEX="X:2699521-154931043"
-export XPAR2="X:154931044-155260560"
-export TRUEY="Y:2649521-59034050"
+#export XPAR1="X:1-2699520"
+#export TRUEX="X:2699521-154931043"
+#export XPAR2="X:154931044-155260560"
+#export TRUEY="Y:2649521-59034050"
 
+export YPAR1="chrY:10000-2781479"		# Hard masked to Ns in HG38
+export YPAR2="chrY:56887902-57217415"
+export TRUEY="chrY:2781480-56887901"	# Hard masked to Ns in HG38
+
+export XPAR1="chrX:10000-2781479"
+export XPAR2="chrX:155701382-156030895"
+export TRUEX="chrX:2781480-155701381"
 
 ####################
 # Modules versions #
@@ -216,8 +265,9 @@ export SB
 # Sometimes we call this file outside of a slurm script so fake it til it's made.
 [ -z $SLURM_MEM_PER_CPU ] && SLURM_MEM_PER_CPU=4096
 [ -z $SLURM_JOB_CPUS_PER_NODE ] && SLURM_JOB_CPUS_PER_NODE=4
+[ -z $RAMDISK ] && RAMDISK=0
 
-export JAVA_MEM_GB=$(((($SLURM_MEM_PER_CPU * $SLURM_JOB_CPUS_PER_NODE)/1024)-2))
+export JAVA_MEM_GB=$(((($SLURM_MEM_PER_CPU * $SLURM_JOB_CPUS_PER_NODE) / 1024) - 2 - $RAMDISK))
 export   JAVA_ARGS="-Xmx${JAVA_MEM_GB}g -Djava.io.tmpdir=${JOB_TEMP_DIR}"
 export MAX_RECORDS=$((${JAVA_MEM_GB} * 200000)) #~100bp picard records in memory.
 
@@ -368,16 +418,48 @@ function storeMetrics {
 				BACKDIR=""
 		esac
 		
-		printf \
-			"%s %s %dc %dGB %s %s\n" \
-			"$(date '+%Y%m%d-%H%M%S')" \
-			"${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne ":$SLURM_ARRAY_TASK_ID")" \
-			${SLURM_JOB_CPUS_PER_NODE} \
-			$(((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU}) / 1024)) \
+		jobStats=$(sstat --format=AveCPU,MinCPU,AveRSS,MaxRSS,MaxVMSize, -j $([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne "${SLURM_ARRAY_TASK_ID}_${SLURM_ARRAY_TASK_ID}" || echo -ne $SLURM_JOB_ID))
+		echo $jobStats
+		jobStats=$(echo $jobStats | tail -n 1)
+		AveCPU=$(echo $jobStats | awk '{print $1}')
+		MaxMEM=$(echo $jobStats | awk '{print $4}')
+		MaxVM=$(echo $jobStats | awk '{print $5}')
+		
+		# Desired log output: DATE/Time, JobID, RunTime, CPUs, CPU Usage, Max Mem, Memory Usage, Completion state, Job Name.
+		printf "%s,%s,%s,%s,%s,%s,%s,%s,%s\n" \
+			"$(date '+%Y%m%d.%H%M%S')" \
+			"$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne "$SLURM_ARRAY_JOB_ID:$SLURM_ARRAY_TASK_ID" || echo -ne "$SLURM_JOB_ID")" \
 			$(printHMS $SECONDS) \
-			$([ "$SIGTERM" != "" ] && echo -ne "$SIGTERM" || echo -ne "") | \
+			$SLURM_JOB_CPUS_PER_NODE \
+			$AveCPU \
+			$(((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU}) / 1024)) \
+			$MaxMEM \
+			$([ "$SIGTERM" != "" ] && echo -ne "$SIGTERM" || echo -ne "PASS") \
+			$SLURM_JOB_NAME
+		
+		if [ ! -e ${BACKDIR}metrics.txt ]; then
+			echo "Date/Time,RunTime,CPUs,Mem,JobName,Result" > ${BACKDIR}metrics.txt
+		fi
+		
+		if [ ! -e $HOME/metrics.txt ]; then
+			echo "Date/Time,RunTime,CPUs,Mem,JobName,Result" > $HOME/metrics.txt
+		fi
+		
+		if [ ! -e $HOME/$(date '+%Y_%m_%d').metrics.txt ]; then
+			echo "Date/Time,RunTime,CPUs,Mem,JobName,Result" > $HOME/$(date '+%Y_%m_%d').metrics.txt
+		fi
+		
+		printf \
+			"%s,%s,%d,%d,%s,%s\n" \
+			"$(date '+%Y%m%d.%H%M%S')" \
+			$(printHMS $SECONDS) \
+			$SLURM_JOB_CPUS_PER_NODE \
+			$((($SLURM_JOB_CPUS_PER_NODE * $SLURM_MEM_PER_CPU) / 1024)) \
+			"${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne ":$SLURM_ARRAY_TASK_ID")" \
+			$([ "$SIGTERM" != "" ] && echo -ne "$SIGTERM" || echo -ne "PASS") | \
 			tee -a ${BACKDIR}metrics.txt | \
-			tee -a ${HOME}/metrics.txt >> ${HOME}/$(date '+%Y_%m_%d').metrics.txt
+			tee -a $HOME/metrics.txt >> \
+			$HOME/$(date '+%Y_%m_%d').metrics.txt
 		
 #		if [ "$SIGTERM" == "SIGTERM" ]; then
 #			# This job is about to be killed due to timelimit. Resubmit itself with double the wall time.
@@ -541,10 +623,7 @@ export -f cmdFailed
 # Outputs a dependency if one exists.
 ###################
 function depCheck {
-	if [ "$1" != "" ]
-	then
-		echo -ne "--dependency afterok:${1}"
-	fi
+	[ "$1" != "" ] && echo -ne "--dependency $([ "$2" != "" ] && printf "aftercorr" || printf "afterok"):${1}"
 }
 export -f depCheck
 

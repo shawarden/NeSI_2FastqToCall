@@ -20,7 +20,7 @@ du -sh
 
 # Purge excess files.
 # This must be run AFTER the upload completes otherwise...
-find . -type f -regex '.*\(bam\|bai\|vcf\|vcf.gz\|tbi\)$' -exec sh -c 'echo "$HEADER: Purging file $(realpath {})"; rm {}' \;
+find . -type f -regex '.*\(bam\|bai\|vcf\|gz\|tbi\)$' -exec sh -c 'echo "$HEADER: Purging file $(realpath {})"; rm {}' \;
 
 # Get data-less store size.
 du -sh

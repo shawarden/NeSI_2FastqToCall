@@ -54,7 +54,7 @@ END {
 # If the index varies by more than FASTQ_MAXDIFF then split to new output file.
 # Output files are appended with the index line data.
 function awkByReadsAndGroup {
-	if ! srun ${CAT_CMD} ${INPUT} | awk -F'[@:]' \
+	if ! ${CAT_CMD} ${INPUT} | awk -F'[@:]' \
 		-v zeroPad="$FASTQ_MAXZPAD" \
 		-v outHeader="$HEADER" \
 		-v sampleID="$SAMPLE" \
@@ -165,7 +165,7 @@ END {
 }
 
 function awkByRead {
-	if ! srun ${CAT_CMD} ${INPUT} | awk '
+	if ! ${CAT_CMD} ${INPUT} | awk '
 # Starting conditions.
 BEGIN {
 	start=systime()
@@ -201,7 +201,7 @@ END {
 
 function splitByRead {
 	echo "$HEADER: srun ${CAT_CMD} ${INPUT} | ${SPLIT_CMD} -d -a $FASTQ_MAXZPAD -l $READCOUNT --filter='${ZIP_CMD} > $FILE.fastq.gz' - blocks/R${READNUM}_" | tee -a commands.txt
-	if ! srun ${CAT_CMD} ${INPUT} | ${SPLIT_CMD} -d -a $FASTQ_MAXZPAD -l $READCOUNT --filter='${ZIP_CMD} > $FILE.fastq.gz' - blocks/R${READNUM}_
+	if ! ${CAT_CMD} ${INPUT} | ${SPLIT_CMD} -d -a $FASTQ_MAXZPAD -l $READCOUNT --filter='${ZIP_CMD} > $FILE.fastq.gz' - blocks/R${READNUM}_
 	then
 		exit $EXIT_PR
 	fi
@@ -216,10 +216,14 @@ echo "$HEADER: Best index is [${bestIndex}]"
 
 mkdir -p blocks
 
+JOBSTEP="batch"
+
 if ! awkByRead; then
 	cmdFailed $?
 	exit $EXIT_PR
 fi
+
+storeMetrics
 
 #rm ${INPUT} && echo "$HEADER: Purged input file!"
 

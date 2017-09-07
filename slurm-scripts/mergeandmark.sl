@@ -11,8 +11,8 @@
 
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
-CONTIG=${CONTIGARRAY[$SLURM_ARRAY_TASK_ID]}
-MERGED=${JOB_TEMP_DIR}/merged.bam
+CONTIG=${CONTIGBLOCKS[$SLURM_ARRAY_TASK_ID]}
+MERGED=$SHM_DIR/merged.bam
 OUTPUT=markdup/${CONTIG}.bam
 
 HEADER="MM"
@@ -20,8 +20,14 @@ HEADER="MM"
 echo "$HEADER: ${CONTIG} -> merged -> ${OUTPUT}"
 date
 
-contigMerBlocks=$(find . -type f -iwholename "*/split/${CONTIG}_*.bam" -printf '%h\0%d\0%p\n' | sort -t '\0' -n | awk -F '\0' '{print $3}')
+# Blocks do not need to be sequential do they?
+#contigMerBlocks=$(find . -type f -iwholename "*/split/*/${CONTIG}.bam") -printf '%h\0%d\0%p\n' | sort -t '\0' -n | awk -F '\0' '{print $3}')
+# Get list of blocks of the base contig and all alternates.
+contigMerBlocks=$(find . -type f -iwholename "*/split/*/${CONTIG}.bam"; find . -type f -iwholename "*/split/*/${CONTIG}_*.bam"; find . -type f -iwholename "*/split/*/${CONTIG}\**.bam" | tr '\n' ' ')
+
 numcontigMerBlocks=$(echo "$contigMerBlocks" | wc -l)
+
+echo "$contigMerBlocks"
 
 if [ $numcontigMerBlocks -eq 0 ]; then
 	echo "$HEADER: Merge contig ${CONTIG} contains $numcontigMerBlocks files!"
@@ -51,23 +57,38 @@ if ! outFile; then exit $EXIT_IO; fi
 
 module load ${MOD_JAVA}
 
-#CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} MergeSamFiles ${PIC_ARGS} ${MERGE_ARGS} ${mergeList} OUTPUT=${MERGED}"
-#echo "$HEADER: ${CMD}" | tee -a commands.txt
-
-#if ! ${CMD}; then
-#	cmdFailed $?
-#	exit ${EXIT_PR}
-#fi
-
-CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} MarkDuplicates ${PIC_ARGS} ${MARK_ARGS} ${mergeList} OUTPUT=${OUTPUT}" #INPUT=${MERGED} 
+HEADER="MC"
+CMD="srun $(which java) ${JAVA_ARGS} -jar ${PICARD} MergeSamFiles ${PIC_ARGS} ${MERGE_ARGS} ${mergeList} OUTPUT=${MERGED}"
 echo "$HEADER: ${CMD}" | tee -a commands.txt
+
+JOBSTEP=0
 
 if ! ${CMD}; then
 	cmdFailed $?
-	exit ${EXIT_PR}
+	exit ${JOBSTEP}${EXIT_PR}
 fi
 
-rm ${contigMerBlocks} && echo "$HEADER: Purging $numcontigMerBlocks contig merge blocks!"
+storeMetrics
+
+MC_SECONDS=$SECONDS
+SECONDS=0
+HEADER="MD"
+CMD="srun $(which java) ${JAVA_ARGS} -jar ${PICARD} MarkDuplicates ${PIC_ARGS} ${MARK_ARGS} INPUT=${MERGED} OUTPUT=${OUTPUT}" 
+echo "$HEADER: ${CMD}" | tee -a commands.txt
+
+JOBSTEP=1
+
+if ! ${CMD}; then
+	cmdFailed $?
+	exit ${JOBSTEP}${EXIT_PR}
+fi
+
+storeMetrics
+
+SECONDS=$(($SECONDS + $MC_SECONDS))
+
+JOBSTEP=""
+
+rm $contigMerBlocks && echo "$HEADER: Purging $numcontigMerBlocks contig merge blocks!"
 
 touch ${OUTPUT}.done
-

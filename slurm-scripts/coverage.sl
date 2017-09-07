@@ -27,7 +27,7 @@ ren='^[0-9]+$'
 
 printf "#%-10s %8s %s\n" "Chromosome" "Coverage" "Count" | tee -a ${OUTPUT}
 
-for contig in ${CONTIGARRAY[@]}; do
+for contig in ${CONTIGBLOCKS[@]}; do
 	INPUT=depth/${contig}.sample_summary
 	if [ ! -e ${INPUT} ]; then
 		# Oh crappola!

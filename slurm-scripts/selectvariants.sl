@@ -30,13 +30,17 @@ GATK_ARGS="-T ${GATK_PROC} \
 
 module load ${MOD_JAVA}
 
-CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar $GATK ${GATK_ARGS} -I ${INPUT} -o ${JOB_TEMP_DIR}/${OUTPUT}"
+CMD="srun $(which java) ${JAVA_ARGS} -jar $GATK ${GATK_ARGS} -I ${INPUT} -o ${JOB_TEMP_DIR}/${OUTPUT}"
 echo "SV: ${CMD}" | tee -a commands.txt
+
+JOBSTEP=0
 
 if ! ${CMD}; then
 	cmdFailed $?
-	exit $EXIT_PR
+	exit ${JOBSTEP}${EXIT_PR}
 fi
+
+storeMetrics
 
 # Move output to final location
 if ! finalOut; then exit $EXIT_MV; fi

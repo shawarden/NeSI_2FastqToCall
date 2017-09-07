@@ -23,13 +23,17 @@ if ! inFile;  then exit $EXIT_IO; fi
 if ! outDirs; then exit $EXIT_IO; fi
 if ! outFile; then exit $EXIT_IO; fi
 
-CMD="$(which srun) ${SAMTOOLS} index ${INPUT} ${JOB_TEMP_DIR}/${OUTPUT}"
+CMD="srun ${SAMTOOLS} index ${INPUT} ${JOB_TEMP_DIR}/${OUTPUT}"
 echo "$HEADER: ${CMD}" | tee -a commands.txt
+
+JOBSTEP=0
 
 if ! ${CMD}; then
 	cmdFailed $?
-	exit $EXIT_PR
+	exit ${JOBSTEP}${EXIT_PR}
 fi
+
+storeMetrics
 
 # Move output to final location
 if ! finalOut; then exit $EXIT_MV; fi

@@ -37,12 +37,16 @@ OUTPUT="~/projects/NeSI_Transfer/${IDN}/$(basename ${OUTPUT})"
 echo "$HEADER: ${INPUT} -> ${OUTPUT}"
 date
 
-CMD="ssh globus transfer --encrypt --perf-cc 4 --perf-p 8 --label \"${LABEL}\" -- nz#uoa/$(pwd)/${INPUT} nesi#otago-dtn01/${OUTPUT}"
+CMD="ssh globus transfer --encrypt --perf-cc 4 --perf-p 8 --label \"${LABEL}\" -- ${ENDPOINT_NESI}/$(pwd)/${INPUT} ${ENDPOINT_UOO}/${OUTPUT}"
 echo "$HEADER: ${CMD}" | tee -a commands.txt
+
+JOBSTEP=""
 
 if ! ssh globus wait $(${CMD} | awk '{print $3}'); then
 	cmdFailed $?
 	exit $EXIT_PR
 fi
+
+storeMetrics
 
 touch ${LABEL}.transfer.done

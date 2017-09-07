@@ -35,13 +35,17 @@ COMPRESSION_LEVEL=9 \
 MAX_RECORDS_IN_RAM=${MAX_RECORDS} \
 TMP_DIR=${JOB_TEMP_DIR}"
 
-CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar ${PICARD} SortSam ${PIC_ARGS} INPUT=${INPUT} OUTPUT=${JOB_TEMP_DIR}/${OUTPUT}"
+CMD="srun $(which java) ${JAVA_ARGS} -jar ${PICARD} SortSam ${PIC_ARGS} INPUT=${INPUT} OUTPUT=${JOB_TEMP_DIR}/${OUTPUT}"
 echo "$HEADER: ${CMD}" | tee -a ../commands.txt
+
+JOBSTEP=0
 
 if ! ${CMD}; then
 	cmdFailed $?
-	exit $EXIT_PR
+	exit ${JOBSTEP}${EXIT_PR}
 fi
+
+storeMetrics
 
 # Move output to final location
 if ! finalOut; then exit $EXIT_MV; fi

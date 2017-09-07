@@ -30,10 +30,14 @@ if ! outFile; then exit $EXIT_IO; fi
 CMD="${SAMTOOLS} view -bh ${INPUT} ${CONTIG} > ${JOB_TEMP_DIR}/${OUTPUT}"
 echo "$HEADER: ${CMD}" | tee -a ../commands.txt
 
+JOBSTEP=0
+
 if ! eval ${CMD}; then
 	cmdFailed $?
-	exit $EXIT_PR
+	exit ${JOBSTEP}${EXIT_PR}
 fi
+
+storeMetrics
 
 # Move output to final location
 if ! finalOut; then exit $EXIT_MV; fi

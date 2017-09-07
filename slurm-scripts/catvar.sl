@@ -38,13 +38,17 @@ GATK_ARGS="${GATK_PROC} \
 
 module load ${MOD_JAVA}
 
-CMD="$(which srun) $(which java) ${JAVA_ARGS} -cp $GATK ${GATK_ARGS} ${mergeList} -out ${JOB_TEMP_DIR}/${OUTPUT}"
+CMD="srun $(which java) ${JAVA_ARGS} -cp $GATK ${GATK_ARGS} ${mergeList} -out ${JOB_TEMP_DIR}/${OUTPUT}"
 echo "$HEADER ${CMD}" | tee -a commands.txt
+
+JOBSTEP=0
 
 if ! ${CMD}; then
 	cmdFailed $?
-	exit $EXIT_PR
+	exit ${JOBSTEP}${EXIT_PR}
 fi
+
+storeMetrics
 
 # Move output to final location
 if ! finalOut; then exit $EXIT_MV; fi
@@ -53,13 +57,15 @@ if ! finalOut; then exit $EXIT_MV; fi
 
 touch ${OUTPUT}.done
 
+CV_OUTPUT=${OUTPUT}
+
 # Start transfers for variants file and index.
-if ! . ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}; then
+if ! . ${SLSBIN}/transfer.sl ${IDN} ${CV_OUTPUT}; then
 	echo "$HEADER: Transfer failed!"
 	exit $EXIT_TF
 fi
 
-if ! . ${SLSBIN}/transfer.sl ${IDN} ${OUTPUT}.tbi; then
+if ! . ${SLSBIN}/transfer.sl ${IDN} ${CV_OUTPUT}.tbi; then
 	echo "$HEADER: Transfer index failed!"
 	exit $EXIT_TF
 fi

@@ -11,7 +11,7 @@
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
 PLATFORM=${1}
-CONTIG=$([ "${2}" == "" ] && echo -ne "${CONTIGARRAY[$SLURM_ARRAY_TASK_ID]}" || echo -ne "${2}")	# Input value or specific value.
+CONTIG=$([ "${2}" == "" ] && echo -ne "${CONTIGBLOCKS[$SLURM_ARRAY_TASK_ID]}" || echo -ne "${2}")	# Input value or specific value.
 
  INPUT=printreads/${CONTIG}.bam
 OUTPUT=depth/${CONTIG}
@@ -56,12 +56,16 @@ GATK_ARGS="-T ${GATK_PROC} \
 
 module load ${MOD_JAVA}
 
-CMD="$(which srun) $(which java) ${JAVA_ARGS} -jar $GATK ${GATK_ARGS} -I ${INPUT} -o ${OUTPUT}"
+CMD="srun $(which java) ${JAVA_ARGS} -jar $GATK ${GATK_ARGS} -I ${INPUT} -o ${OUTPUT}"
 echo "$HEADER: ${CMD}" | tee -a commands.txt
+
+JOBSTEP=0
 
 if ! ${CMD}; then
 	cmdFailed $?
-	exit $EXIT_PR
+	exit ${JOBSTEP}${EXIT_PR}
 fi
+
+storeMetrics
 
 touch ${OUTPUT}.done

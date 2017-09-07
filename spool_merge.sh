@@ -21,7 +21,7 @@ readBlocks=$(find ./blocks -type f -iname "R1_*.fastq.gz" | wc -l)
 #	purgeList="$(($readBlocks+1))-$FASTQ_MAXJOBZ"
 #	scancel ${DEP_BA}_[${purgeList}] && echo "Purged excess alignment and sort jobs $purgeList"
 for i in $(seq 1 ${readBlocks}); do
-	if [ ! -e split/contig_split_$(printf "%0${FASTQ_MAXZPAD}d" $i).done ]; then
+	if [ ! -e split/$(printf "%0${FASTQ_MAXZPAD}d" $i)/contig_split.done ]; then
 		# This contig block hasn't been split yet.
 		alignArray=$(appendList "$alignArray" $i ",")
 	fi
@@ -46,8 +46,6 @@ fi
 
 cd ..
 
-exit 0
-
 ######################################
 #INJECT MULTIPLE RUNS PER INDIVIDUAL #
 ######################################
@@ -68,9 +66,10 @@ haploArray=""
 
 # Loop though number of contigs in reference sequence.
 # Build list of incomplete merged contigs.
-for i in $(seq 1 ${NUMCONTIGS}); do
+for i in $(seq 1 ${NUMCONTIG_BLOCKS}); do
 	# Build input/output file names
-	contig=${CONTIGARRAY[$i]}	# Does bash do array lookups every time too?
+	contig=${CONTIGBLOCKS[$i]}	# Does bash do array lookups every time too?
+	printf "%04d %-22s " $i $contig
 	
 	mergeMarkOutput=markdup/${contig}.bam
 	    recalOutput=printreads/${contig}.bam
@@ -85,26 +84,26 @@ for i in $(seq 1 ${NUMCONTIGS}); do
 	
 	if [ ! -e ${mergeMarkOutput}.done ]; then
 		mergeMarkArray=$(appendList "$mergeMarkArray"  $i ",")
-		#printf "MD "
+		printf "MD "
 	fi
 	
 	if [ ! -e ${recalOutput}.done ]; then
 		recalArray=$(appendList "$recalArray" $i ",")
-		#printf "PR "
+		printf "PR "
 	fi
 	
 	if [ ! -e ${depthOutput}.done ]; then
 		depthArray=$(appendList "$depthArray" $i ",")
-		#printf "DC "
+		printf "DC "
 	fi
 	
 	if [ "$contig" != "X" ] && [ "$contig" != "Y" ] && [ "$contig" != "MT" ]; then	#Skip sex and mitochondrial chromosomes
 		if [ ! -e ${haploOutput}.done ]; then
 			haploArray=$(appendList "$haploArray" $i ",")
-			#printf "HC "
+			printf "HC "
 		fi
 	fi
-	#printf "\n"
+	printf "\n"
 done
 
 mergeReadCount=$(echo ${catReadInputs} | wc -w)
@@ -326,6 +325,8 @@ fi
 
 # Add cleanup dependency.
 saveDeps=$(appendList "$saveDeps" "$DEP_CV")
+
+exit 0
 
 printf "%-22s" "Save workflow"
 

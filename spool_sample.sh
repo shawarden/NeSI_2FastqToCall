@@ -19,6 +19,12 @@ else
 	WORK_PATH="/projects/uoo00032/Alignments"
 fi
 
+if [ ! -e $READ1 ] || [ ! -e $READ2 ]
+then
+	echo "Read files may not exist!"
+	exit 1
+fi
+
 printf "%-22s%s\n" "SampleID" "${SAMPLE}"
 printf "%-22s%s\n" "Read 1" "${READ1}"
 printf "%-22s%s\n" "Read 2" "${READ2}"

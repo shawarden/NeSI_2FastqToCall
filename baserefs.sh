@@ -24,6 +24,9 @@ export EXIT_TF=21
 
 export SLURM_VERSION=$(scontrol -V | awk '{print $2}')
 
+export ENDPOINT_NESI=nesi#pan_auckland
+export ENDPOINT_UOO=nesi#otago-dtn01
+
 export      PROJECT=/projects/uoo00032
 export    RESOURCES=${PROJECT}/Resources
 export    PLATFORMS=${RESOURCES}/Capture_Platforms/GRCh37
@@ -34,18 +37,18 @@ export DESCRIPTIONS=${RESOURCES}/FastQdescriptions.txt
 export       FASTQS=${PROJECT}/fastqfiles
 
 #export       COMMON=${RESOURCES}/Hapmap3_3commonvariants.vcf
-#export       BUNDLE=${RESOURCES}/broad_bundle_b37_v2.5
-#export        DBSNP=${BUNDLE}/dbsnp_141.GRCh37.vcf
-#export        MILLS=${BUNDLE}/Mills_and_1000G_gold_standard.indels.b37.vcf
-#export       INDELS=${BUNDLE}/1000G_phase1.indels.b37.vcf
-#export          REF=${BUNDLE}/human_g1k_v37
+export       BUNDLE=${RESOURCES}/broad_bundle_b37_v2.5
+export        DBSNP=${BUNDLE}/dbsnp_141.GRCh37.vcf
+export        MILLS=${BUNDLE}/Mills_and_1000G_gold_standard.indels.b37.vcf
+export       INDELS=${BUNDLE}/1000G_phase1.indels.b37.vcf
+export          REF=${BUNDLE}/human_g1k_v37
 
 export       COMMON=${RESOURCES}/Hapmap3_3commonvariants.vcf
-export       BUNDLE=${RESOURCES}/v0
-export        DBSNP=${BUNDLE}/Homo_sapiens_assembly38.dbsnp138.vcf
-export        MILLS=${BUNDLE}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
-export       INDELS=${BUNDLE}/1000G_phase1.snps.high_confidence.hg38.vcf.gz
-export          REF=${BUNDLE}/Homo_sapiens_assembly38
+#export       BUNDLE=${RESOURCES}/v0
+#export        DBSNP=${BUNDLE}/Homo_sapiens_assembly38.dbsnp138.vcf
+#export        MILLS=${BUNDLE}/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
+#export       INDELS=${BUNDLE}/1000G_phase1.snps.high_confidence.hg38.vcf.gz
+#export          REF=${BUNDLE}/Homo_sapiens_assembly38
 
 export         REFA=${REF}.fasta
 export JOB_TEMP_DIR=$([ "${TMPDIR}" != "" ] && echo "${TMPDIR}" || echo "${PROJECT}/.tmp")
@@ -67,7 +70,7 @@ export SPLIT_CMD=${BIN}/coreutils-8.25/src/split
 ######################
 
 # Setup basic contig definition.
-export                REFD=${REF}.dict
+export REFD=${REF}.dict
 
 if [ ! -e $REFD ]; then 
 	echo "Unable to locate reference dictionary"
@@ -77,7 +80,7 @@ fi
 # List of contigs in specified reference sequence.
 # GRCh37 has 84
 # HG38 has 3367
-export         CONTIGARRAY=("" $(cat $REFD | awk 'NR!=1{print $2}' | sed -e 's/SN://g'))
+export CONTIGARRAY=("" $(cat $REFD | awk 'NR!=1{print $2}' | sed -e 's/SN://g'))
 
 # List of contigs in specified reference sequence, excluding those marked as decoy, non-human sequences.
 # GRCh37 has 84
@@ -90,7 +93,7 @@ export CONTIGARRAY_NODECOY=("" $(cat $REFD | grep -v "decoy" | awk 'NR!=1{print 
 # In HG38 EBV will contain all Epstein-Barr Virus contigs
 # GRCh37 has 84
 # HG38 has 28
-export        CONTIGBLOCKS=("" $(for i in $(seq 0 $((${#CONTIGARRAY[@]}-1))); do echo "${CONTIGARRAY[$i]}"; done | awk -F'[-_ ]' '
+export CONTIGBLOCKS=("" $(for i in $(seq 0 $((${#CONTIGARRAY[@]}-1))); do echo "${CONTIGARRAY[$i]}"; done | awk -F'[*_ ]' '
 {
 	words[$1]++
 }
@@ -102,23 +105,23 @@ END{
 	' | sort -V -f
 ))
 
-export          NUMCONTIGS=$((${#CONTIGARRAY[@]} - 1))
-export  NUMCONTIGS_NODECOY=$((${#CONTIGARRAY_NODECOY[@]} - 1))
-export    NUMCONTIG_BLOCKS=$((${#CONTIGBLOCKS[@]} - 1))
+export         NUMCONTIGS=$((${#CONTIGARRAY[@]} - 1))
+export NUMCONTIGS_NODECOY=$((${#CONTIGARRAY_NODECOY[@]} - 1))
+export   NUMCONTIG_BLOCKS=$((${#CONTIGBLOCKS[@]} - 1))
 
 # Gender contigs have parts that are not created equal.
-#export XPAR1="X:1-2699520"
-#export TRUEX="X:2699521-154931043"
-#export XPAR2="X:154931044-155260560"
-#export TRUEY="Y:2649521-59034050"
+export XPAR1="X:1-2699520"
+export TRUEX="X:2699521-154931043"
+export XPAR2="X:154931044-155260560"
+export TRUEY="Y:2649521-59034050"
 
-export YPAR1="chrY:10000-2781479"		# Hard masked to Ns in HG38
-export YPAR2="chrY:56887902-57217415"
-export TRUEY="chrY:2781480-56887901"	# Hard masked to Ns in HG38
+#export YPAR1="chrY:10000-2781479"		# Hard masked to Ns in HG38
+#export YPAR2="chrY:56887902-57217415"
+#export TRUEY="chrY:2781480-56887901"	# Hard masked to Ns in HG38
 
-export XPAR1="chrX:10000-2781479"
-export XPAR2="chrX:155701382-156030895"
-export TRUEX="chrX:2781480-155701381"
+#export XPAR1="chrX:10000-2781479"
+#export XPAR2="chrX:155701382-156030895"
+#export TRUEX="chrX:2781480-155701381"
 
 ####################
 # Modules versions #
@@ -146,30 +149,6 @@ export FASTQ_MAXZPAD=4			#${#FASTQ_MAXJOBS}	# Number of characters to pad to blo
 export MAX_JOB_RATE=6
 
 
-############################
-# Auto-retry function data #
-############################
-declare -A PROCESSLIST
-PROCESSLIST[RS]=readsplit
-PROCESSLIST[PA]=align
-PROCESSLIST[SS]=sort
-PROCESSLIST[CS]=contigsplit
-PROCESSLIST[MC]=mergecontigs
-PROCESSLIST[MD]=markduplicates
-PROCESSLIST[BR]=baserecalibrator
-PROCESSLIST[PR]=printreads
-PROCESSLIST[CR]=catreads
-PROCESSLIST[RI]=catreadsindex
-PROCESSLIST[DC]=depthofcoverage
-PROCESSLIST[GD]=coverage
-PROCESSLIST[HC]=haplotypecaller
-PROCESSLIST[CV]=catvariants
-PROCESSLIST[FP]=fingerprint
-PROCESSLIST[SV]=selectvariants
-PROCESSLIST[TF]=trasnfer
-
-export PROCESSLIST
-
 ##########################
 # Dispatch function data #
 ##########################
@@ -189,69 +168,90 @@ SB[MAILTYPE]=FAIL
 #
 
 SB[BWTM]=1.25	# Base wall-time multiplier.
-SB[MWT]=359		# Maximum wall-time to be in High partition.
+#SB[MWT]=359		# Maximum wall-time to be in High partition.
+SB[MWT]=1440	# 1 day.
 
 # ReadSplit.
+SB[RS]="RSplit"
 SB[RS,MWT]=${SB[MWT]}
 SB[RS,MPC]=512
-SB[RS,CPT]=8
+SB[RS,CPT]=6
 
 # Block alignment (Merged PA, SS & CS)
+SB[PA]="Align"
+SB[SS]="Sort"
+SB[CS]="CSplit"
+SB[BA]="AlignSortSplit"
 SB[BA,MWT]=${SB[MWT]}
 SB[BA,MPC]=2048
 SB[BA,CPT]=8
 
 # Merge & Mark
+SB[MC]="CMerge"
+SB[MD]="MarkDup"
+SB[MM]="MergeMark"
 SB[MM,MWT]=${SB[MWT]}
-SB[MM,MPC]=4096
-SB[MM,CPT]=4
+SB[MM,MPC]=8192
+SB[MM,CPT]=2
 
 # Recal & Print
+SB[BR]="BaseRecal"
+SB[PR]="PrintReads"
+SB[RC]="ReCal"
 SB[RC,MWT]=${SB[MWT]}
 SB[RC,MPC]=4092
 SB[RC,CPT]=8
 
 # DepthofCoverage
+SB[DC]="Depth"
 SB[DC,MWT]=${SB[MWT]}
 SB[DC,MPC]=2048
 SB[DC,CPT]=8
 
 # GenderDetermination
+SB[GD]="Gender"
 SB[GD,MWT]=${SB[MWT]}
 SB[GD,MPC]=512
 SB[GD,CPT]=1
 
 # HaplotypeCaller
+SB[HC]="Haplotype"
 SB[HC,MWT]=${SB[MWT]}
 SB[HC,MPC]=4096
 SB[HC,CPT]=8
 
 # CatReads
+SB[CR]="CatReads"
 SB[CR,MWT]=${SB[MWT]}
 SB[CR,MPC]=4096
 SB[CR,CPT]=1
 
 # ReadIndex
+SB[RI]="IndexReads"
 SB[RI,MWT]=${SB[MWT]}
 SB[RI,MPC]=4096
-SB[RI,CPT]=1
+SB[RI,CPT]=2
 
 # CatVariants
+SB[CV]="CatVar"
 SB[CV,MWT]=${SB[MWT]}
-SB[CV,MPC]=16384
-SB[CV,CPT]=1
+SB[CV,MPC]=8192
+SB[CV,CPT]=2
 
 # FingerPrint
+SB[FP]="FingerPrint"
 SB[FP,MWT]=${SB[MWT]}
 SB[FP,MPC]=4096
 SB[FP,CPT]=8
 
 # SelectVariants
+SB[SV]="SelectVar"
 SB[SV,MWT]=${SB[MWT]}
 SB[SV,MPC]=4096
 SB[SV,CPT]=8
 
 # TransferFile
+SB[TF]="Transfer"
 SB[TF,MWT]=${SB[MWT]}
 SB[TF,MPC]=1024
 SB[TF,CPT]=6
@@ -267,7 +267,7 @@ export SB
 [ -z $SLURM_JOB_CPUS_PER_NODE ] && SLURM_JOB_CPUS_PER_NODE=4
 [ -z $RAMDISK ] && RAMDISK=0
 
-export JAVA_MEM_GB=$(((($SLURM_MEM_PER_CPU * $SLURM_JOB_CPUS_PER_NODE) / 1024) - 2 - $RAMDISK))
+export JAVA_MEM_GB=$(((($SLURM_MEM_PER_CPU * $SLURM_JOB_CPUS_PER_NODE) / 1024) - 5 - $RAMDISK))
 export   JAVA_ARGS="-Xmx${JAVA_MEM_GB}g -Djava.io.tmpdir=${JOB_TEMP_DIR}"
 export MAX_RECORDS=$((${JAVA_MEM_GB} * 200000)) #~100bp picard records in memory.
 
@@ -308,7 +308,10 @@ GATK_READ="-T PrintReads \
 
 GATK_HTC="-T HaplotypeCaller \
 --emitRefConfidence GVCF \
---dbsnp ${DBSNP}"
+--dbsnp ${DBSNP} \
+-G StandardAnnotation \
+-G AS_StandardAnnotation \
+-G StandardHCAnnotation"
 
 ####################
 # Helper functions #
@@ -325,39 +328,47 @@ export -f printHMS
 
 ##
 # Outputs minutes from various combinations of time strings:
-#  D-HH:MM:SS
-#    HH:MM:SS
-#       MM:SS
-#       MM
+#  D-H:M:S
+#    H:M:S
+#      M:S
+#      M
 ##
 function printMinutes {
-	INPUT="${1}"
-	DAYS=$(echo ${INPUT} | cut -d'-' -f1)
-	[ "$DAYS" == "" ] && DAYS=0
-	
-	INPUT=$(echo ${INPUT} | cut -d'-' -f2)
-	local numTimeBlocks=$(($(echo $INPUT | grep -o ':' | wc -l) + 1))
-	case $numTimeBlocks in
-		1)	# Minutes
-			MINS=$INPUT
-			;;
-		2)	# Minutes:Seconds
-			MINS=$(echo $INPUT | cut -d':' -f1)
-			SECS=$(echo $INPUT | cut -d':' -f2)
-			;;
-		3)	# Hours:Minutes:Seconds
-			HOURS=$(echo $INPUT | cut -d':' -f1)
-			 MINS=$(echo $INPUT | cut -d':' -f2)
-			 SECS=$(echo $INPUT | cut -d':' -f3)
-			;;
-		*)
-			(echo "baserefs/printMinutes:WHAT?" 1>&2)
-			exit 1
-	esac
-	
-	printf "%d" $((($DAYS * 1440) + ($HOURS * 60) + $MINS + ($SECS/60)))
+	printf "%.0f" $(echo "$(printSeconds $1) / 60" | bc -l)
 }
 export -f printMinutes
+
+##
+# Outputs seconds from various combinations of time strings:
+#  D-H:M:S
+#    H:M:S
+#      M:S
+#      M
+##
+function printSeconds {
+	echo $1 | awk '{
+		numHMSBlocks=split($0,hmsBlocks,":")
+		
+		if (numHMSBlocks == 1) {
+			# Minutes only
+			printf "%.0f", hmsBlocks[1] * 60
+		} else if (numHMSBlocks == 2) {
+			# Minutes:Seconds
+			printf "%.0f", (hmsBlocks[1] * 60) + hmsBlocks[2]
+		} else if (numHMSBlocks == 3) {
+			# (days?)-Hours:Minutes:Seconds
+			numDHBlocks=split(hmsBlocks[1],dhBlocks,"-")
+			if (numDHBlocks == 1) {
+				# Hours only.
+				printf "%.0f", (dhBlocks[1] * 60 * 60) + (hmsBlocks[2] * 60) + hmsBlocks[3]
+			} else {
+				# Days-Hours.
+				printf "%.0f", (dhBlocks[1] * 24 * 60 * 60) + (dhBlocks[2] * 60 * 60) + (hmsBlocks[2] * 60) + hmsBlocks[3]
+			}
+		}
+	}'
+}
+export -f printSeconds
 
 #######################
 # Output basic node information on job failure.
@@ -380,26 +391,8 @@ export -f scriptFailed
 # Output runtime metrics to a log file.
 #######################
 function failMetrics {
-	SIGTERM="SIGTERM"
-	
-#	case $HEADER in
-#		RS|PA|SS|CS)
-#			BACKDIR="../"
-#			;;
-#		*)
-#			BACKDIR=""
-#	esac
-#	
-#	printf \
-#		"%s\t%s\t%dc\t%1.1fGHz\t%dGB\t%s\tSIGTERM\n" \
-#		"$(date '+%Y-%m-%d %H:%M:%S')" \
-#		"${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne ":$SLURM_ARRAY_TASK_ID")" \
-#		${SLURM_JOB_CPUS_PER_NODE} \
-#		$(echo "$(lscpu | grep "CPU MHz" | awk '{print $3}') / 1000" | bc -l) \
-#		$(((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU}) / 1024)) \
-#		$(printHMS $SECONDS) | \
-#		tee -a ${BACKDIR}metrics.txt | \
-#		tee -a ${HOME}/metrics.txt >> ${HOME}/$(date '+%Y_%m_%d').metrics.txt
+	export SIGTERM="SIGTERM"
+	storeMetrics
 }
 export -f failMetrics
 
@@ -409,6 +402,7 @@ trap "failMetrics" SIGTERM
 # Output runtime metrics to a log file.
 #######################
 function storeMetrics {
+	sleep 10s
 	if [ "$SLURM_JOB_NAME" != "" ] && [ "$HEADER" != "" ] && [ "$HEADER" != "CU" ]; then
 		case $HEADER in
 			RS|PA|SS|CS|BA)
@@ -418,65 +412,66 @@ function storeMetrics {
 				BACKDIR=""
 		esac
 		
-		jobStats=$(sstat --format=AveCPU,MinCPU,AveRSS,MaxRSS,MaxVMSize, -j $([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne "${SLURM_ARRAY_TASK_ID}_${SLURM_ARRAY_TASK_ID}" || echo -ne $SLURM_JOB_ID))
-		echo $jobStats
-		jobStats=$(echo $jobStats | tail -n 1)
-		AveCPU=$(echo $jobStats | awk '{print $1}')
-		MaxMEM=$(echo $jobStats | awk '{print $4}')
-		MaxVM=$(echo $jobStats | awk '{print $5}')
-		
-		# Desired log output: DATE/Time, JobID, RunTime, CPUs, CPU Usage, Max Mem, Memory Usage, Completion state, Job Name.
-		printf "%s,%s,%s,%s,%s,%s,%s,%s,%s\n" \
-			"$(date '+%Y%m%d.%H%M%S')" \
-			"$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne "$SLURM_ARRAY_JOB_ID:$SLURM_ARRAY_TASK_ID" || echo -ne "$SLURM_JOB_ID")" \
-			$(printHMS $SECONDS) \
-			$SLURM_JOB_CPUS_PER_NODE \
-			$AveCPU \
-			$(((${SLURM_JOB_CPUS_PER_NODE} * ${SLURM_MEM_PER_CPU}) / 1024)) \
-			$MaxMEM \
-			$([ "$SIGTERM" != "" ] && echo -ne "$SIGTERM" || echo -ne "PASS") \
-			$SLURM_JOB_NAME
-		
 		if [ ! -e ${BACKDIR}metrics.txt ]; then
-			echo "Date/Time,RunTime,CPUs,Mem,JobName,Result" > ${BACKDIR}metrics.txt
+			echo "$logLine" > ${BACKDIR}metrics.txt
 		fi
 		
+		logLine="DateTime,ID,RunTime,Node,CoreAlloc,CoreUtil,MemAlloc,MemUtil,Result,JobName"
 		if [ ! -e $HOME/metrics.txt ]; then
-			echo "Date/Time,RunTime,CPUs,Mem,JobName,Result" > $HOME/metrics.txt
+			echo "$logLine" > $HOME/metrics.txt
 		fi
 		
 		if [ ! -e $HOME/$(date '+%Y_%m_%d').metrics.txt ]; then
-			echo "Date/Time,RunTime,CPUs,Mem,JobName,Result" > $HOME/$(date '+%Y_%m_%d').metrics.txt
+			echo "$logLine" > $HOME/$(date '+%Y_%m_%d').metrics.txt
 		fi
 		
-		printf \
-			"%s,%s,%d,%d,%s,%s\n" \
-			"$(date '+%Y%m%d.%H%M%S')" \
+		jobID=$([ "$SLURM_ARRAY_JOB_ID" != "" ] && echo -ne "${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}" || echo -ne "${SLURM_JOBID}")
+		jobString="${jobID}$([ "$JOBSTEP" != "" ] && echo -ne ".${JOBSTEP}")"
+		(echo "JobID[.JobStep]:$jobString" 1>&2)
+		
+		sacct --format jobid%20,jobname%20,elapsed,AveCPU,MinCPU,TotalCPU,UserCPU,CPUTime,CPUTimeRaw -j ${jobID}
+		
+		jobStats=$(sacct --format JobID%20,JobName%10,UserCPU,CPUTimeRaw,MaxRSS -j $jobString)
+		(echo "$jobStats" 1>&2)
+		
+		JobName=${SLURM_JOB_NAME#*_}
+		
+		jobLine=$(echo "$jobStats" | grep "\s${jobString}\s")
+		(echo "jobline: $jobLine" 1>&2)
+		
+		UserCPU=$(printSeconds $(echo $jobLine | awk '{print $3}'))	# Convert usercpu time to seconds.
+		IdealCPU=$(echo $jobLine | awk '{print $4}')	# CPUTimeRaw is already in seconds.
+		CPUUsage=$(echo "$UserCPU $IdealCPU $SLURM_JOB_CPUS_PER_NODE" | awk '{printf "%.2f", (($1 / $2) * $3)}' )
+		
+		(echo "CPU: ($UserCPU / $IdealCPU) * $SLURM_JOB_CPUS_PER_NODE = $CPUUsage" 1>&2)
+		
+		MaxRSS=$(echo $jobLine | awk '{print $5}')
+		MaxRSSMB=$(echo "${MaxRSS%?}" | awk '{printf "%f", $1 / 1024}')
+		MaxMem=$(echo "${SLURM_JOB_CPUS_PER_NODE} ${SLURM_MEM_PER_CPU}" | awk '{printf "%.0f", $1 * $2}' )
+		MemUsage=$(echo "$MaxRSSMB $MaxMem" | awk '{printf "%.2f", ($1 / $2)}' )
+		(echo "MEM: ($MaxRSSMB / $MaxMem) = $MemUsage" 1>&2)
+		
+		# Desired log output: DATE.Time, JobID, RunTime, CPUs, CPU Usage, MaxMem, Mem Usage, Completion state, Job Name.
+		printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" \
+			"$(date '+%Y-%m-%d %H:%M:%S')" \
+			$jobString \
 			$(printHMS $SECONDS) \
+			${SLURM_NODELIST//compute-/} \
 			$SLURM_JOB_CPUS_PER_NODE \
-			$((($SLURM_JOB_CPUS_PER_NODE * $SLURM_MEM_PER_CPU) / 1024)) \
-			"${SLURM_JOB_NAME}$([ "$SLURM_ARRAY_TASK_ID" != "" ] && echo -ne ":$SLURM_ARRAY_TASK_ID")" \
-			$([ "$SIGTERM" != "" ] && echo -ne "$SIGTERM" || echo -ne "PASS") | \
+			$([ "$CPUUsage" != "" ] && echo -ne "$CPUUsage" || echo -ne "0.0") \
+			$([ "$MaxMem" != "" ] && echo -ne "$MaxMem" || echo -ne "0.0") \
+			$([ "$MaxRSSMB" != "" ] && echo -ne "$MaxRSSMB" || echo -ne "0.0") \
+			$([ "$SIGTERM" != "" ] && echo -ne "$SIGTERM" || echo -ne "PASS") \
+			${SB[$HEADER]} \
+			"${JobName}$([ "$SLURM_ARRAY_JOB_ID" != "" ] && echo -ne ":$SLURM_ARRAY_TASK_ID")" | \
 			tee -a ${BACKDIR}metrics.txt | \
 			tee -a $HOME/metrics.txt >> \
 			$HOME/$(date '+%Y_%m_%d').metrics.txt
-		
-#		if [ "$SIGTERM" == "SIGTERM" ]; then
-#			# This job is about to be killed due to timelimit. Resubmit itself with double the wall time.
-#			(
-#				SB[$HEADER,MWT]=$((${SB[$HEADER,MWT]} * 2))
-#				sbatch $(dispatch "$HEADER") \
-#					-J $SLURM_JOB_NAME \
-#					-A $SLURM_ARRAY_TASK_ID \
-#					${SLSBIN}/${PROCESSLIST[$HEADER]}.sl \
-#					${@}
-#			)
-#		fi
 	fi
 }
 export -f storeMetrics
 
-trap "storeMetrics" EXIT
+#trap "storeMetrics" EXIT
 
 #####################
 # Return a string with a new item on the end
@@ -590,7 +585,7 @@ export -f outFile
 # Make sure input file exists
 #################
 function inFile {
-	if [ ! -e ${INPUT} ]; then
+	if [ ! -e "${INPUT}" ]; then
 		echo "$HEADER: Input file \"${INPUT}\" doesn't exists!"
 		ls -la $(dirname $INPUT)
 		exit 1
@@ -608,6 +603,17 @@ function finalOut {
 	fi
 }
 export -f finalOut
+
+###################
+# Move temp output to final output locations
+###################
+function scratchOut {
+	if ! mv ${SCRATCH_DIR}/${OUTPUT%.*}* $(dirname ${OUTPUT}); then
+		echo "$HEADER: Failed to move ${SCRATCH_DIR}/${OUTPUT} to ${PWD}/${OUTPUT}!"
+		exit 1
+	fi
+}
+export -f scratchOut
 
 ####################
 # Check if command filed
@@ -633,7 +639,7 @@ export -f depCheck
 function dispatch {
 	jobWait
 	JOBCAT=${1}
-	printf "%s--account %s --mail-user %s --mail-type %s --time %.0f --mem-per-cpu %d --cpus-per-task %d" \
+	printf "%s--account %s --mail-user %s --mail-type %s --time %.0f --mem-per-cpu %d --cpus-per-task %d --profile=task" \
 	"" \
 	${SB[ACCOUNT]} \
 	${SB[MAILUSER]} \
@@ -648,9 +654,9 @@ export -f dispatch
 # Echo job stats to log file
 ###################
 function jobStats {
-	echo -e "$HEADER:\tMax Walltime:     ${SB[$HEADER,MWT]}"
-	echo -e "\tMemory-Per-Core: ${SB[$HEADER,MPC]}"
-	echo -e "\tCores-Per-Task:  ${SB[$HEADER,CPT]}"
+echo -e "$HEADER:\tWalltime: $(printHMS $(printSeconds ${SB[$HEADER,MWT]}))"
+	echo -e "\tCores:    ${SB[$HEADER,CPT]}"
+	echo -e "\tMemory:   $((${SB[$HEADER,MPC]} * ${SB[$HEADER,CPT]}))"
 }
 export -f jobStats
 

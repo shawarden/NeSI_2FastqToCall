@@ -20,21 +20,22 @@ du -sh
 
 # Purge excess files.
 # This must be run AFTER the upload completes otherwise...
-find . -type f -regex '.*\(bam\|bai\|vcf\|gz\|tbi\)$' -exec sh -c 'echo "$HEADER: Purging file $(realpath {})"; rm {}' \;
+#find . -type f -regex '.*\(bam\|bai\|vcf\|gz\|tbi\)$' -exec sh -c 'echo "$HEADER: Purging file $(realpath {})"; rm {}' \;
 
 # Get data-less store size.
-du -sh
+#du -sh
 
 # Roll up entire directory structure and .done files.
-tar cf - ${PWD} | ${ZIP_CMD} -9 > ../${IDN}.tar.gz
+cd ../
+tar --exclude=*.gz --exclude=*.bam --exclude=*.bai --exclude=*.done --exclude=*.tbi --exclude=*.vcf ${IDN}.tar.gz ${IDN}
 
 # Upload workflow structure.
-if ! . ${SLSBIN}/transfer.sl ${IDN} ../${IDN}.tar.gz; then
+if ! . ${SLSBIN}/transfer.sl ${IDN} ${IDN}.tar.gz; then
 	echo "$HEADER: Transfer process failed!"
 	exit $EXIT_TF
 fi
 
 # Purge run.
 # This really should fail as the --error and --output files are in this folder.
-rm --interactive=never -fr *
-rm ../${IDN}.tar.gz;
+#rm --interactive=never -fr *
+#rm ../${IDN}.tar.gz;

@@ -32,7 +32,7 @@ then
 fi
 
 # Strip pathing from output
-OUTPUT="~/projects/NeSI_Transfer/${IDN}/$(basename ${OUTPUT})"
+OUTPUT="~/projects/SequenceData/GRCh37/Alignments/Genomic/${IDN}/$(basename ${OUTPUT})"
 
 echo "$HEADER: ${INPUT} -> ${OUTPUT}"
 date

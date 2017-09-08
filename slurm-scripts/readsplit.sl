@@ -225,7 +225,7 @@ fi
 
 storeMetrics
 
-#rm ${INPUT} && echo "$HEADER: Purged input file!"
+rm ${INPUT} && echo "$HEADER: Purged input file!"
 
 if [ ! -e ${SAMPLE}_R${PAIRNUM}_split.done ]; then
 	echo "Paired read not completed!"

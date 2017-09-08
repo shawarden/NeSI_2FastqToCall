@@ -19,6 +19,16 @@
 
 # Update history
 
+## 2017-09-08
+
+### Changed
+- Cleanup script to correct tarball only the log files etc.
+- Allow purging FastQ files once read-split has completed.
+- Transfer puts files in correct place. Permissions issues will persist as Globus daemon 'owns' HCS files.
+
+### Removed
+- Cleanup script trying to purge working folder as transfers may be active. Manual it is boys.
+
 ## 2016-11-18
 
 ### Removed

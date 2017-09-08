@@ -326,8 +326,6 @@ fi
 # Add cleanup dependency.
 saveDeps=$(appendList "$saveDeps" "$DEP_CV")
 
-exit 0
-
 printf "%-22s" "Save workflow"
 
 if [ "$saveDeps" != "" ]; then

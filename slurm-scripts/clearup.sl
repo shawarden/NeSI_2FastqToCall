@@ -25,9 +25,12 @@ du -sh
 # Get data-less store size.
 #du -sh
 
+# Roll up script folder into its own tarball.
+tar --cf scriptbundle_$(date +%F_%H-%M-%S_%Z).tar /projects/uoo00032/Resources/bin/NeSI_2FastqToCall
+
 # Roll up entire directory structure and .done files.
 cd ../
-tar --exclude=*.gz --exclude=*.bam --exclude=*.bai --exclude=*.done --exclude=*.tbi --exclude=*.vcf ${IDN}.tar.gz ${IDN}
+tar --exclude=*.gz --exclude=*.bam --exclude=*.bai --exclude=*.done --exclude=*.tbi --exclude=*.vcf -zcf ${IDN}.tar.gz ${IDN}
 
 # Upload workflow structure.
 if ! . ${SLSBIN}/transfer.sl ${IDN} ${IDN}.tar.gz; then

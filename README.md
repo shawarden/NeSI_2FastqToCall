@@ -19,6 +19,14 @@
 
 # Update history
 
+## 2017-09-11
+
+### Fixed
+- Cleanup script tarball arguments.
+
+### Added
+- Cleanup stores a copy of the script bundle.
+
 ## 2017-09-08
 
 ### Changed

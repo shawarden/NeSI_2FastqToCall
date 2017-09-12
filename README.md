@@ -19,6 +19,11 @@
 
 # Update history
 
+## 2017-09-12
+
+### Fixed
+- Spool_Sample not resuming a job after fastq files have been purged.
+
 ## 2017-09-11
 
 ### Fixed

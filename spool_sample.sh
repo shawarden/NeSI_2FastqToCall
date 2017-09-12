@@ -19,12 +19,6 @@ else
 	WORK_PATH="/projects/uoo00032/Alignments"
 fi
 
-if [ ! -e $READ1 ] || [ ! -e $READ2 ]
-then
-	echo "Read files may not exist!"
-	exit 1
-fi
-
 printf "%-22s%s\n" "SampleID" "${SAMPLE}"
 printf "%-22s%s\n" "Read 1" "${READ1}"
 printf "%-22s%s\n" "Read 2" "${READ2}"
@@ -73,26 +67,32 @@ for i in $(seq 1 2); do
 	fi
 done
 
-####################
-# Get a fancy size #
-####################
-
-sizeString=" kMGTEPYZ"
-sizeBlock=0
-readSize=$(($(ls -la $READ1 | awk '{print $5}') + $(ls -la $READ2 | awk '{print $5}')))
-while [ $(echo "$readSize / 1024 > 0" | bc) -eq 1 ]; do
-	#printf "%-12s %.0f%s\n" "Read size" $readSize $(echo ${sizeString:${sizeBlock}:1}Bytes | sed -e 's/ //g')
-	readSize=$(echo "$readSize / 1024" | bc -l)
-	sizeBlock=$((sizeBlock+1))
-done
-
-readSize=$(echo $(printf "%.0f" $readSize)${sizeString:${sizeBlock}:1}B | sed -e 's/ //g')
-
 ############################
 # Launch needed split jobs #
 ############################
 
 if [ "$splitReadArray" != "" ]; then
+	
+	if [ ! -e $READ1 ] || [ ! -e $READ2 ]
+	then
+		echo "Read files may not exist!"
+		exit 1
+	fi
+	
+	####################
+	# Get a fancy size #
+	####################
+	
+	sizeString=" kMGTEPYZ"
+	sizeBlock=0
+	readSize=$(($(ls -la $READ1 | awk '{print $5}') + $(ls -la $READ2 | awk '{print $5}')))
+	while [ $(echo "$readSize / 1024 > 0" | bc) -eq 1 ]; do
+		#printf "%-12s %.0f%s\n" "Read size" $readSize $(echo ${sizeString:${sizeBlock}:1}Bytes | sed -e 's/ //g')
+		readSize=$(echo "$readSize / 1024" | bc -l)
+		sizeBlock=$((sizeBlock+1))
+	done
+	readSize=$(echo $(printf "%.0f" $readSize)${sizeString:${sizeBlock}:1}B | sed -e 's/ //g')
+	
 	# Split array contains data so run the missing split function.
 	DEP_RS=$(sbatch $(dispatch "RS") -J RS_${SAMPLE}_${readSize} -a $splitReadArray $SLSBIN/readsplit.sl $SAMPLE $READ1 $READ2 $PLATFORM | awk '{print $4}')
 	if [ $? -ne 0 ] || [ "$DEP_RS" == "" ]; then

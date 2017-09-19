@@ -8,8 +8,9 @@
 #####################################
 
 
-  SAMPLE=${1}
-PLATFORM=${2}
+   SAMPLE=${1}
+ PLATFORM=${2}
+MULTI_RUN=${3}
 
 IDN=$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $1}')
 
@@ -42,6 +43,13 @@ if [ "$alignArray" != "" ]; then
 	fi
 else
 	printf "done\n"
+fi
+
+if [ "${MULTI_RUN}" != "" ]
+then
+	echo "Mutliple run mode. Stopping at alignment."
+	echo "Launch last run without multi-run mode enabled to complete."
+	exit 0
 fi
 
 cd ..
@@ -125,7 +133,7 @@ fi
 printf "%-22s" "Recalibration"
 
 if [ "$recalArray" != "" ]; then
-	DEP_RC=$(sbatch $(dispatch "RC") -J RC_${IDN} --array $recalArray $(depCheck $DEP_MM) $SLSBIN/recalibration.sl | awk '{print $4}')
+	DEP_RC=$(sbatch $(dispatch "RC") -J RC_${IDN} --array $recalArray $(depCheckArrack $DEP_MM) $SLSBIN/recalibration.sl | awk '{print $4}')
 	if [ $? -ne 0 ] || [ "$DEP_RC" == "" ]; then
 		printf "FAILED!\n"
 		exit 1
@@ -141,7 +149,7 @@ fi
 printf "%-22s" "Depth of Coverage"
 
 if [ "$depthArray" != "" ]; then
-	DEP_DC=$(sbatch $(dispatch "DC") -J DC_${IDN} --array $depthArray $(depCheck $DEP_RC) $SLSBIN/depthofcoverage.sl $PLATFORM | awk '{print $4}')
+	DEP_DC=$(sbatch $(dispatch "DC") -J DC_${IDN} --array $depthArray $(depCheckArrack $DEP_RC) $SLSBIN/depthofcoverage.sl $PLATFORM | awk '{print $4}')
 	if [ $? -ne 0 ] || [ "$DEP_DC" == "" ]; then
 		printf "FAILED!\n"
 		exit 1
@@ -157,7 +165,7 @@ fi
 printf "%-22s" "HaplotypeCaller"
 
 if [ "$haploArray" != "" ]; then
-	DEP_HC=$(sbatch $(dispatch "HC") -J HC_${IDN} --array $haploArray $(depCheck $DEP_RC) $SLSBIN/haplotypecaller.sl | awk '{print $4}')
+	DEP_HC=$(sbatch $(dispatch "HC") -J HC_${IDN} --array $haploArray $(depCheckArrack $DEP_RC) $SLSBIN/haplotypecaller.sl | awk '{print $4}')
 	if [ $? -ne 0 ] || [ "$DEP_HC" == "" ]; then
 		printf "FAILED!\n"
 		exit 1
@@ -307,7 +315,7 @@ else
 fi
 
 # Add cleanup dependency.
-saveDeps=$(appendList "$saveDeps" "$DEP_CR")
+saveDeps=$(appendList "$saveDeps" "$DEP_CR" ":")
 
 printf "%-22s" "CatVariants"
 
@@ -324,7 +332,7 @@ else
 fi
 
 # Add cleanup dependency.
-saveDeps=$(appendList "$saveDeps" "$DEP_CV")
+saveDeps=$(appendList "$saveDeps" "$DEP_CV" ":")
 
 printf "%-22s" "Save workflow"
 

@@ -12,7 +12,8 @@ source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
      READ2=${FASTQS}/${3}
  PLATFORM=${4}
  LOCATION=${5}
- 
+MULTI_RUN=${6}
+
 if [ "$LOCATION" == "scratch" ]; then
 	WORK_PATH="/scratch/jobs/$USER"
 else
@@ -24,6 +25,7 @@ printf "%-22s%s\n" "Read 1" "${READ1}"
 printf "%-22s%s\n" "Read 2" "${READ2}"
 printf "%-22s%s\n" "Platform" "${PLATFORM}"
 printf "%-22s%s\n" "Location" "${WORK_PATH}"
+[ "$MULTI_RUN" == "" ] && printf "%-22s%s\n" "MutliRun" "YES"
 
 IDN=$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $1}')
 DNA=$(echo ${SAMPLE} | awk -F'[[:blank:]_]' '{print $2}')
@@ -94,7 +96,7 @@ if [ "$splitReadArray" != "" ]; then
 	readSize=$(echo $(printf "%.0f" $readSize)${sizeString:${sizeBlock}:1}B | sed -e 's/ //g')
 	
 	# Split array contains data so run the missing split function.
-	DEP_RS=$(sbatch $(dispatch "RS") -J RS_${SAMPLE}_${readSize} -a $splitReadArray $SLSBIN/readsplit.sl $SAMPLE $READ1 $READ2 $PLATFORM | awk '{print $4}')
+	DEP_RS=$(sbatch $(dispatch "RS") -J RS_${SAMPLE}_${readSize} -a $splitReadArray $SLSBIN/readsplit.sl $SAMPLE $READ1 $READ2 $PLATFORM ${MULTI_RUN} | awk '{print $4}')
 	if [ $? -ne 0 ] || [ "$DEP_RS" == "" ]; then
 		printf "FAILED!\n"
 		exit 1
@@ -104,7 +106,7 @@ if [ "$splitReadArray" != "" ]; then
 	fi
 else
 	printf "done\n"
-	if ! ${PBIN}/spool_merge.sh ${SAMPLE} ${PLATFORM}; then
+	if ! ${PBIN}/spool_merge.sh ${SAMPLE} ${PLATFORM} ${MULTI_RUN}; then
 		cmdFailed $?
 		exit $EXIT_PR
 	fi

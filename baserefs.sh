@@ -60,7 +60,8 @@ export JOB_TEMP_DIR=$([ "${TMPDIR}" != "" ] && echo "${TMPDIR}" || echo "${PROJE
 export       BWA=${BIN}/bwa-0.7.15/bwa
 export    PICARD=${BIN}/picard-tools-2.5.0/picard.jar
 export  SAMTOOLS=${BIN}/samtools-1.3.1/samtools
-export      GATK=${BIN}/GenomeAnalysisTK-nightly-2016-07-22-g8923599/GenomeAnalysisTK.jar
+#export      GATK=${BIN}/GenomeAnalysisTK-nightly-2016-07-22-g8923599/GenomeAnalysisTK.jar
+export      GATK=${BIN}/GenomeAnalysisTK-3.8-0-ge9d806836/GenomeAnalysisTK.jar
 export   ZIP_CMD=${BIN}/pigz-2.3.3/pigz_sb
 export   CAT_CMD="${ZIP_CMD} -cd"
 export SPLIT_CMD=${BIN}/coreutils-8.25/src/split
@@ -267,7 +268,7 @@ export SB
 [ -z $SLURM_JOB_CPUS_PER_NODE ] && SLURM_JOB_CPUS_PER_NODE=4
 [ -z $RAMDISK ] && RAMDISK=0
 
-export JAVA_MEM_GB=$(((($SLURM_MEM_PER_CPU * $SLURM_JOB_CPUS_PER_NODE) / 1024) - 5 - $RAMDISK))
+export JAVA_MEM_GB=$(((($SLURM_MEM_PER_CPU * $SLURM_JOB_CPUS_PER_NODE) / 1024) - 3 - $RAMDISK))
 export   JAVA_ARGS="-Xmx${JAVA_MEM_GB}g -Djava.io.tmpdir=${JOB_TEMP_DIR}"
 export MAX_RECORDS=$((${JAVA_MEM_GB} * 200000)) #~100bp picard records in memory.
 
@@ -629,9 +630,18 @@ export -f cmdFailed
 # Outputs a dependency if one exists.
 ###################
 function depCheck {
-	[ "$1" != "" ] && echo -ne "--dependency $([ "$2" != "" ] && printf "aftercorr" || printf "afterok"):${1}"
+	(echo "depCheck: $0 \"${@}\"" >> ~/depCheck.log)
+	#[ "$1" != "" ] && echo -ne "--dependency $([ "$2" != "" ] && printf "aftercorr" || printf "afterok"):${1}"
+	[ "${@}a" != "a" ] && echo -ne "--dependency afterok:${@}"
 }
 export -f depCheck
+
+function depCheckArrack {
+	(echo "depCheck: $0 \"${@}\"" >> ~/depCheck.log)
+	#[ "$1" != "" ] && echo -ne "--dependency $([ "$2" != "" ] && printf "aftercorr" || printf "afterok"):${1}"
+	[ "${@}a" != "a" ] && echo -ne "--dependency aftercorr:${@}"
+}
+export -f depCheckArrack
 
 ###################
 # Gets job category data

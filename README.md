@@ -19,6 +19,15 @@
 
 # Update history
 
+## 2017-09-19
+
+### Added
+- Support for multi-run jobs via stop-after-alignment marker.
+
+### Fixed
+- Array dependency corrilation not working correctly.
+- Cleanup dependency list being incorrectly defined.
+
 ## 2017-09-12
 
 ### Fixed

@@ -14,6 +14,8 @@ source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
     READ1=${2}
     READ2=${3}
  PLATFORM=${4}
+MULTI_RUN=${5}
+
   READNUM=$([ -n $SLURM_ARRAY_TASK_ID ] && echo -ne $SLURM_ARRAY_TASK_ID || echo -ne "1")
   PAIRNUM=$([ $READNUM -eq 1 ] && echo -ne "2" || echo -ne "1")
 READCOUNT=$((4*$FASTQ_MAXREAD))
@@ -223,6 +225,8 @@ if ! awkByRead; then
 	exit $EXIT_PR
 fi
 
+touch ${SAMPLE}_R${READNUM}_split.done
+
 storeMetrics
 
 rm ${INPUT} && echo "$HEADER: Purged input file!"
@@ -231,11 +235,9 @@ if [ ! -e ${SAMPLE}_R${PAIRNUM}_split.done ]; then
 	echo "Paired read not completed!"
 else
 	echo "Paired read done!"
-	if ! ${PBIN}/spool_merge.sh ${SAMPLE} ${PLATFORM}; then
+	if ! ${PBIN}/spool_merge.sh ${SAMPLE} ${PLATFORM} ${MULTI_RUN}; then
 		cmdFailed $?
 		exit $EXIT_PR
 	fi
 fi
-
-touch ${SAMPLE}_R${READNUM}_split.done
 

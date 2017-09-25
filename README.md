@@ -19,6 +19,21 @@
 
 # Update history
 
+## 2017-09-25
+
+### Changed
+- Default run-time to 5h, 59m for high priority queue.
+- Separated FASTQ size data.
+
+### Fixed
+- Ramdisk allocation above baserefs call to affect ram allocation correctly.
+
+### Added
+- Command line options to spool_sample to streamline multi-run, gender analysis, etc.
+
+### Todo
+- Update all scripts to accept dynamic command line options
+
 ## 2017-09-19
 
 ### Added

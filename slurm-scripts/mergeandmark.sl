@@ -9,14 +9,14 @@
 #SBATCH --error			slurm/MM_%A_%a.out
 #SBATCH --output		slurm/MM_%A_%a.out
 
+RAMDISK=8
+
 source /projects/uoo00032/Resources/bin/NeSI_2FastqToCall/baserefs.sh
 
 CONTIG=${CONTIGBLOCKS[$SLURM_ARRAY_TASK_ID]}
 #MERGED=$SHM_DIR/merged.bam
 MERGED=markdup/${CONTIG}_merged.bam
 OUTPUT=markdup/${CONTIG}.bam
-
-RAMDISK=8
 
 HEADER="MM"
 

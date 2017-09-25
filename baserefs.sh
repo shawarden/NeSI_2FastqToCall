@@ -169,8 +169,8 @@ SB[MAILTYPE]=FAIL
 #
 
 SB[BWTM]=1.25	# Base wall-time multiplier.
-#SB[MWT]=359		# Maximum wall-time to be in High partition.
-SB[MWT]=1440	# 1 day.
+SB[MWT]=359		# Maximum wall-time to be in High partition.
+#SB[MWT]=1440	# 1 day.
 
 # ReadSplit.
 SB[RS]="RSplit"
@@ -768,3 +768,16 @@ function realpath {
 	echo $(cd $(dirname $1); pwd)/$(basename $1);
 }
 export -f realpath
+
+function fileSize {
+	sizeString=" kMGTEPYZ"
+	sizeBlock=0
+	readSize=$(ls -la $1 | awk '{print $5}')
+	while [ $(echo "$readSize / 1024 > 0" | bc) -eq 1 ]; do
+		#printf "%-12s %.0f%s\n" "Read size" $readSize $(echo ${sizeString:${sizeBlock}:1}Bytes | sed -e 's/ //g')
+		readSize=$(echo "$readSize / 1024" | bc -l)
+		sizeBlock=$((sizeBlock+1))
+	done
+	echo $(printf "%.0f" $readSize)${sizeString:${sizeBlock}:1}B | sed -e 's/ //g'
+}
+export -f fileSize

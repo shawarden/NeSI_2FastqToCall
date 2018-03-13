@@ -28,25 +28,27 @@ ren='^[0-9]+$'
 printf "#%-10s %8s %s\n" "Chromosome" "Coverage" "Count" | tee -a ${OUTPUT}
 
 for contig in ${CONTIGBLOCKS[@]}; do
-	INPUT=depth/${contig}.sample_summary
-	if [ ! -e ${INPUT} ]; then
-		# Oh crappola!
-		echo "#${contig} file ${INPUT} doesn't exist!" | tee -a ${OUTPUT}
-		echo "exit 1" | tee -a ${OUTPUT}
-		exit $EXIT_IO
-	fi
-	
-	contigCount=$(awk 'NR==2{print $2}' ${INPUT})
-	contigCover=$(awk 'NR==2{print $3}' ${INPUT})
-	printf "#%-10s %8s %s\n" ${contig} ${contigCover} ${contigCount} | tee -a ${OUTPUT}
-	
-	if [[ $contig =~ $ren ]]; then	# Contig is a number
-		aCount=$(($aCount + $contigCount))
-		aCoverage=$(echo "($aCoverage + ($contigCount * $contigCover))" | bc)
-	elif [[ $contig == X ]]; then
-		xCoverage=${contigCover}
-	elif [[ $contig == Y ]]; then
-		yCoverage=${contigCover}
+	if [ "$contig" != "MT" ] && [ "$contig" != "hs37d5" ] && [ "$contig" != "NC_007605" ] && [[ $contig != GL* ]]; then
+		INPUT=depth/${contig}.sample_summary
+		if [ ! -e ${INPUT} ]; then
+			# Oh crappola!
+			echo "#${contig} file ${INPUT} doesn't exist!" | tee -a ${OUTPUT}
+			echo "exit 1" | tee -a ${OUTPUT}
+			exit $EXIT_IO
+		fi
+		
+		contigCount=$(awk 'NR==2{print $2}' ${INPUT})
+		contigCover=$(awk 'NR==2{print $3}' ${INPUT})
+		printf "#%-10s %8s %s\n" ${contig} ${contigCover} ${contigCount} | tee -a ${OUTPUT}
+		
+		if [[ $contig =~ $ren ]]; then	# Contig is a number
+			aCount=$(($aCount + $contigCount))
+			aCoverage=$(echo "($aCoverage + ($contigCount * $contigCover))" | bc)
+		elif [[ $contig == X ]]; then
+			xCoverage=${contigCover}
+		elif [[ $contig == Y ]]; then
+			yCoverage=${contigCover}
+		fi
 	fi
 done
 

@@ -19,6 +19,22 @@
 
 # Update history
 
+## 2018-03-14
+
+### Changed
+- Switched default reference to GRCh37 decoy
+- Email address to primary user. Need to make this dynamic.
+
+### Fixed
+- Removed HG38 specific handling for time being as it breaks decoy sequence.
+- Depth of Coverage dying on pointless contigs.
+
+### Added
+
+### Removed
+- HaplotypeCaller annotations that produce extreme warning logs later on.
+- Coverage calculation checking GL contigs.
+
 ## 2017-09-25
 
 ### Changed

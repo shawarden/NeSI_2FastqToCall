@@ -45,18 +45,14 @@ if ! inFile;  then exit $EXIT_IO; fi
 if ! outDirs; then exit $EXIT_IO; fi
 if ! outFile; then exit $EXIT_IO; fi
 
-GATK_PROC=HaplotypeCaller
-GATK_ARGS="-T ${GATK_PROC} \
--R ${REFA} \
+GATK_ARGS="-R ${REFA} \
 -L ${CONTIG} \
 --sample_ploidy ${intervalPloidy} \
---emitRefConfidence GVCF \
---dbsnp ${DBSNP} \
 -nct ${SLURM_JOB_CPUS_PER_NODE}"
 
 module load ${MOD_JAVA}
 
-CMD="srun $(which java) ${JAVA_ARGS} -jar $GATK ${GATK_ARGS} -I ${INPUT} -o ${JOB_TEMP_DIR}/${OUTPUT}"
+CMD="srun $(which java) ${JAVA_ARGS} -jar $GATK ${GATK_HTC} ${GATK_ARGS} -I ${INPUT} -o ${JOB_TEMP_DIR}/${OUTPUT}"
 echo "$HEADER ${CMD}" | tee -a commands.txt
 
 JOBSTEP=0

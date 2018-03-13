@@ -100,15 +100,17 @@ for i in $(seq 1 ${NUMCONTIG_BLOCKS}); do
 		printf "PR "
 	fi
 	
-	if [ ! -e ${depthOutput}.done ]; then
-		depthArray=$(appendList "$depthArray" $i ",")
-		printf "DC "
-	fi
-	
-	if [ "$contig" != "X" ] && [ "$contig" != "Y" ] && [ "$contig" != "MT" ]; then	#Skip sex and mitochondrial chromosomes
-		if [ ! -e ${haploOutput}.done ]; then
-			haploArray=$(appendList "$haploArray" $i ",")
-			printf "HC "
+	if [ "$contig" != "MT" ] && [ "$contig" != "hs37d5" ] && [ "$contig" != "NC_007605" ] && [[ $contig != GL* ]]; then	# skip non relevant contigs.
+		if [ ! -e ${depthOutput}.done ]; then
+			depthArray=$(appendList "$depthArray" $i ",")
+			printf "DC "
+		fi
+
+		if [ "$contig" != "X" ] && [ "$contig" != "Y" ]; then	#Skip gender
+			if [ ! -e ${haploOutput}.done ]; then
+				haploArray=$(appendList "$haploArray" $i ",")
+				printf "HC "
+			fi
 		fi
 	fi
 	printf "\n"

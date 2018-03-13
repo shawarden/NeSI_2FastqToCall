@@ -24,6 +24,7 @@ export EXIT_TF=21
 
 export SLURM_VERSION=$(scontrol -V | awk '{print $2}')
 
+
 export ENDPOINT_NESI=nesi#pan_auckland
 export ENDPOINT_UOO=nesi#otago-dtn01
 
@@ -41,7 +42,7 @@ export       BUNDLE=${RESOURCES}/broad_bundle_b37_v2.5
 export        DBSNP=${BUNDLE}/dbsnp_141.GRCh37.vcf
 export        MILLS=${BUNDLE}/Mills_and_1000G_gold_standard.indels.b37.vcf
 export       INDELS=${BUNDLE}/1000G_phase1.indels.b37.vcf
-export          REF=${BUNDLE}/human_g1k_v37
+export          REF=${BUNDLE}/human_g1k_v37_decoy
 
 export       COMMON=${RESOURCES}/Hapmap3_3commonvariants.vcf
 #export       BUNDLE=${RESOURCES}/v0
@@ -94,7 +95,7 @@ export CONTIGARRAY_NODECOY=("" $(cat $REFD | grep -v "decoy" | awk 'NR!=1{print 
 # In HG38 EBV will contain all Epstein-Barr Virus contigs
 # GRCh37 has 84
 # HG38 has 28
-export CONTIGBLOCKS=("" $(for i in $(seq 0 $((${#CONTIGARRAY[@]}-1))); do echo "${CONTIGARRAY[$i]}"; done | awk -F'[*_ ]' '
+export CONTIGBLOCKS=("" $(for i in $(seq 0 $((${#CONTIGARRAY[@]}-1))); do echo "${CONTIGARRAY[$i]}"; done | awk -F'[* ]' '
 {
 	words[$1]++
 }
@@ -155,7 +156,7 @@ export MAX_JOB_RATE=6
 ##########################
 declare -A SB
 SB[ACCOUNT]=uoo00032
-SB[MAILUSER]=sam.hawarden@otago.ac.nz
+SB[MAILUSER]=david.markie@otago.ac.nz
 SB[MAILTYPE]=FAIL
 
 # MWT: Calibrated Max Wall-Time
@@ -309,10 +310,14 @@ GATK_READ="-T PrintReads \
 
 GATK_HTC="-T HaplotypeCaller \
 --emitRefConfidence GVCF \
---dbsnp ${DBSNP} \
--G StandardAnnotation \
--G AS_StandardAnnotation \
--G StandardHCAnnotation"
+--dbsnp ${DBSNP}"
+
+#-G StandardAnnotation
+#-G AS_StandardAnnotation
+#-G StandardHCAnnotation"
+
+#--pedigree /path/to/Ped.fancydatefunctionhere.txt
+#--pedigreeValidationType SILENT"
 
 ####################
 # Helper functions #
@@ -335,7 +340,7 @@ export -f printHMS
 #      M
 ##
 function printMinutes {
-	printf "%.0f" $(echo "$(printSeconds $1) / 60" | bc -l)
+	printf "%.0f" $(echo "$(printSeconds $*) / 60" | bc -l)
 }
 export -f printMinutes
 
@@ -347,7 +352,8 @@ export -f printMinutes
 #      M
 ##
 function printSeconds {
-	echo $1 | awk '{
+	declare SECONDSINPUT=${*:-$(</dev/stdin)}
+	echo $SECONDSINPUT | awk '{
 		numHMSBlocks=split($0,hmsBlocks,":")
 		
 		if (numHMSBlocks == 1) {

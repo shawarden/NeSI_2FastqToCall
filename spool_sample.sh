@@ -26,6 +26,7 @@ cat << EOF
 *   -p [PLATFORM]  Capture platform/Exome chip.
 *
 * Options:
+*   -e [step]      Entry point for script
 *   -m             This sample has multiple runs
 *                  and this is NOT the last run.
 *                  Omit this option on final run.
@@ -44,27 +45,27 @@ do
 	FILE=
 	case $OPTION in
 		m)
-			MULTI_RUN==multi
+			export MULTI_RUN=="-m"
 #			(echo "multirun enabled" 1>&2)
 			;;
 		s)
-			USE_SCRATCH=YES
+			export USE_SCRATCH=YES
 #			(echo "using scratch" 1>&2)
 			;;
 		c)
-			SEXCHR=${OPTARG}
+			export SEXCHR=${OPTARG}
 #			(echo "assuming sexchroms $SEXCHR" 1>&2)
 			;;
 		g)
-			GENDER=${OPTARG}
+			export GENDER=${OPTARG}
 #			(echo "assuming gender $GENDER" 1>&2)
 			;;
 		i)
-			SAMPLE=${OPTARG}
+			export SAMPLE=${OPTARG}
 #			(echo "sample $SAMPLE" 1>&2)
 			;;
 		p)
-			PLATFORM=${OPTARG}
+			export PLATFORM=${OPTARG}
 #			(echo "platform $PLATFORM" 1>&2)
 			;;
 		r)
@@ -72,8 +73,8 @@ do
 			IFS=','
 			for file in ${OPTARG}; do
 				if [ ! -e ${FASTQS}/$file ]; then
-					echo "FAILURE: Reads file ${FASTQS}/$file does not exist."
-					exit 1
+					echo "WARN: Reads file ${FASTQS}/$file does not exist."
+					#exit 1
 #				else
 #					(echo "read: ${FASTQS}/${file}" 1>&2)
 				fi

@@ -26,7 +26,7 @@ du -sh
 #du -sh
 
 # Roll up script folder into its own tarball.
-tar --cf scriptbundle_$(date +%F_%H-%M-%S_%Z).tar /projects/uoo00032/Resources/bin/NeSI_2FastqToCall
+tar -cf scriptbundle_$(date +%F_%H-%M-%S_%Z).tar /projects/uoo00032/Resources/bin/NeSI_2FastqToCall
 
 # Roll up entire directory structure and .done files.
 cd ../

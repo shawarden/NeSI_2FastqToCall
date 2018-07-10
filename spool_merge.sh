@@ -100,13 +100,14 @@ for i in $(seq 1 ${NUMCONTIG_BLOCKS}); do
 		printf "PR "
 	fi
 	
-	if [ "$contig" != "MT" ] && [ "$contig" != "hs37d5" ] && [ "$contig" != "NC_007605" ] && [[ $contig != GL* ]]; then	# skip non relevant contigs.
-		if [ ! -e ${depthOutput}.done ]; then
-			depthArray=$(appendList "$depthArray" $i ",")
-			printf "DC "
+	if [ "$contig" != "MT" ] && [ "$contig" != "hs37d5" ] && [ "$contig" != "NC_007605" ]; then	# skip Mito, and Decoy contigs
+		if [[ $contig != GL* ]]; then	# skip GL contigs for depth.
+			if [ ! -e ${depthOutput}.done ]; then
+				depthArray=$(appendList "$depthArray" $i ",")
+				printf "DC "
+			fi
 		fi
-
-		if [ "$contig" != "X" ] && [ "$contig" != "Y" ]; then	#Skip gender
+		if [ "$contig" != "X" ] && [ "$contig" != "Y" ]; then	#Skip gender for haplotype.
 			if [ ! -e ${haploOutput}.done ]; then
 				haploArray=$(appendList "$haploArray" $i ",")
 				printf "HC "
@@ -272,10 +273,13 @@ done
 CatVarDeps="${CarVarDeps2}"
 
 CatVarInputs=""
-for contig in ${CONTIGARRAY[@]}; do
-	if [ "$contig" == "MT" ]; then
+for contig in ${CONTIGBLOCKS[@]}
+do
+	if [ "$contig" == "MT" ] || [ "$contig" == "hs37d5" ] || [ "$contig" == "NC_007605" ]
+	then	# Skip mito and decoy regions
 		continue
-	elif [ "$contig" == "X" ]; then
+	elif [ "$contig" == "X" ]
+	then
 		thisInput="haplo/${XPAR1}.g.vcf.gz haplo/${TRUEX}.g.vcf.gz haplo/${XPAR2}.g.vcf.gz"
 	else
 		thisInput="haplo/${contig}.g.vcf.gz"

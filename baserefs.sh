@@ -25,8 +25,8 @@ export EXIT_TF=21
 export SLURM_VERSION=$(scontrol -V | awk '{print $2}')
 
 
-export ENDPOINT_NESI=nesi#pan_auckland
-export ENDPOINT_UOO=nesi#otago-dtn01
+export ENDPOINT_NESI=d62d1ead-6d04-11e5-ba46-22000b92c6ec
+export ENDPOINT_UOO=7770a464-0540-11e6-a72d-22000bf2d559
 
 export      PROJECT=/projects/uoo00032
 export    RESOURCES=${PROJECT}/Resources
@@ -192,7 +192,7 @@ SB[BA,CPT]=8
 SB[MC]="CMerge"
 SB[MD]="MarkDup"
 SB[MM]="MergeMark"
-SB[MM,MWT]=${SB[MWT]}
+SB[MM,MWT]=719
 SB[MM,MPC]=8192
 SB[MM,CPT]=2
 

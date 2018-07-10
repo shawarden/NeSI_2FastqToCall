@@ -29,8 +29,6 @@
 - Removed HG38 specific handling for time being as it breaks decoy sequence.
 - Depth of Coverage dying on pointless contigs.
 
-### Added
-
 ### Removed
 - HaplotypeCaller annotations that produce extreme warning logs later on.
 - Coverage calculation checking GL contigs.

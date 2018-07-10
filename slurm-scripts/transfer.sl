@@ -37,12 +37,12 @@ OUTPUT="~/projects/SequenceData/GRCh37/Alignments/Genomic/${IDN}/$(basename ${OU
 echo "$HEADER: ${INPUT} -> ${OUTPUT}"
 date
 
-CMD="ssh globus transfer --encrypt --perf-cc 4 --perf-p 8 --label \"${LABEL}\" -- ${ENDPOINT_NESI}/$(pwd)/${INPUT} ${ENDPOINT_UOO}/${OUTPUT}"
+CMD="globus transfer --label \"${LABEL}\" -- ${ENDPOINT_NESI}:/$(pwd)/${INPUT} ${ENDPOINT_UOO}:/${OUTPUT}"
 echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 JOBSTEP=""
 
-if ! ssh globus wait $(${CMD} | awk '{print $3}'); then
+if ! globus task wait $(${CMD} | grep "Task ID" | awk '{print $3}'); then
 	cmdFailed $?
 	exit $EXIT_PR
 fi

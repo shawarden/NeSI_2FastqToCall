@@ -164,20 +164,41 @@ done
 # Launch needed split jobs #
 ############################
 
-if [ "$splitReadArray" != "" ]; then
-	
-	if [ ! -e $READ1 ] || [ ! -e $READ2 ]
+if [ "$splitReadArray" != "" ]; then\
+	if echo $splitReadArray | grep 1 1>/dev/null;
 	then
-		echo "Read files may not exist!"
-		exit 1
+		if [ ! -e $READ1 ]
+		then
+			echo "FAIL Read 1 $READ1 file does not exist!"
+			exit 1
+		fi
+		read1Size=$(ls -lah $READ1 | awk '{print $5}')
+	else
+		read1Size=0
 	fi
+	
+	if echo $splitReadArray | grep 2 1>/dev/null;
+	then
+		if [ ! -e $READ2 ]
+		then
+			echo "FAIL Read 1 $READ2 file does not exist!"
+			exit 1
+		fi
+		read2Size=$(ls -lah $READ2 | awk '{print $5}')
+	else
+		read2Size=0
+	fi
+	
+	#if [ ! -e $READ1 ] || [ ! -e $READ2 ]
+	#then
+	#	echo "Read files may not exist!"
+	#	exit 1
+	#fi
 	
 	####################
 	# Get a fancy size #
 	####################
 	
-	read1Size=$(fileSize $READ1)
-	read2Size=$(fileSize $READ2)
 	
 	#printf "%-22s%s" "Command" "sbatch $(dispatch "RS") -J RS_${SAMPLE}_${readSize} -a $splitReadArray $SLSBIN/readsplit.sl $SAMPLE $READ1 $READ2 $PLATFORM ${MULTI_RUN}"
 	#exit 0

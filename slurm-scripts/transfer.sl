@@ -37,7 +37,7 @@ OUTPUT="~/projects/SequenceData/GRCh37/Alignments/Genomic/${IDN}/$(basename ${OU
 echo "$HEADER: ${INPUT} -> ${OUTPUT}"
 date
 
-CMD="globus transfer --label \"${LABEL}\" -- ${ENDPOINT_NESI}:/$(pwd)/${INPUT} ${ENDPOINT_UOO}:/${OUTPUT}"
+CMD="globus transfer --encrypt --label \"${LABEL}\" -- ${ENDPOINT_NESI}:/$(pwd)/${INPUT} ${ENDPOINT_UOO}:/${OUTPUT}"
 echo "$HEADER: ${CMD}" | tee -a commands.txt
 
 JOBSTEP=""
